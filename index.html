@@ -3660,22 +3660,23 @@ function renderFlower(g, drug, progress, isSolo, now) {
   // petalCurl: petals curl inward (negative) or outward (positive)
   let petalCurl = 0;
 
-  // Phase: Onset — seed/bud, stem just starting
+  // Phase: Onset — seed slowly grows into a visible bud
   if (t <= d.onset) {
     const p = d.onset > 0 ? easeInOut(t / d.onset) : 1;
-    stemGrow = p * 0.3;
-    bloomScale = p * 0.08;
-    petalSpread = 0; // tight bud
-    colorOpacity = 0.4 + p * 0.3;
+    stemGrow = p * 0.35;
+    bloomScale = p * 0.2; // bud grows to 20% (visible, not just a dot)
+    petalSpread = p * 0.05; // very slight opening hint
+    petalCurl = -0.4; // tightly curled inward as a bud
+    colorOpacity = 0.3 + p * 0.35;
   }
-  // Phase: Come Up — petals unfurling, bloom opening
+  // Phase: Come Up — petals slowly unfurl, gradual bloom
   else if (t <= (acc = d.onset) + d.comeUp) {
     const p = d.comeUp > 0 ? easeInOut((t - acc) / d.comeUp) : 1;
-    stemGrow = 0.3 + p * 0.5;
-    bloomScale = 0.08 + p * 0.55;
-    petalSpread = p; // petals fan open from 0 to 1
-    petalCurl = -0.3 * (1 - p); // slight inward curl at start, opening out
-    colorOpacity = 0.7 + p * 0.3;
+    stemGrow = 0.35 + p * 0.45;
+    bloomScale = 0.2 + p * 0.43; // 0.2 → 0.63, smooth growth
+    petalSpread = 0.05 + p * 0.95; // gradually fan open
+    petalCurl = -0.4 + p * 0.4; // uncurl from tight bud to flat
+    colorOpacity = 0.65 + p * 0.35;
   }
   // Phase: Peak — full bloom, vibrant, alive
   else if (t <= (acc = d.onset + d.comeUp) + d.peak) {
