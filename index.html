@@ -666,7 +666,7 @@
   <p>Each flower represents a drug's experience profile. The animation plays through onset, come-up, peak, offset, and after-effects in real-time compression (1 hour = 1 second). Click any flower to watch its full timeline.</p>
   <div class="legend">
     <span><b>Petals</b> = cognitive complexity (how many distinct thought patterns, altered perceptions, and mental effects. More petals = richer, more layered headspace)</span>
-    <span><b>Shape</b> = drug class (rounded: depressants/entactogens, pointed: stimulants, wavy: psychedelics, wispy: dissociatives/deliriants)</span>
+    <span><b>Shape</b> = drug class (rounded: depressants/entactogens, pointed: stimulants, wavy: psychedelics, wispy: dissociatives/deliriants, serrated leaf: cannabinoids)</span>
     <span><b>Color</b> = drug class (warm reds/yellows: stimulants, cool blues: depressants, purples/greens: psychedelics, grays: dissociatives, dark: deliriants)</span>
     <span><b>Size</b> = intensity</span>
     <span><b>Sway</b> = body load</span>
@@ -812,13 +812,13 @@ const drugs = [
     id: "cannabis", name: "Cannabis", category: "Cannabinoids", subcategory: "Cannabinoids",
     duration: { onset: 0.17, comeUp: 0.33, peak: 1.5, offset: 1, afterEffects: 1 },
     effects: { cognitiveComplexity: 4, euphoria: 6, intensity: 4, bodyLoad: 3, egoDissolve: 1, visuals: 2 },
-    flower: { petalCount: 5, petalShape: "rounded", primaryColor: "#22c55e", secondaryColor: "#86efac", petalRadius: 22, centerSize: 6, stemHeight: 35 }
+    flower: { petalCount: 7, petalShape: "cannabis", primaryColor: "#22c55e", secondaryColor: "#86efac", petalRadius: 26, centerSize: 5, stemHeight: 35 }
   },
   {
     id: "jwh018", name: "JWH-018", category: "Cannabinoids", subcategory: "Cannabinoids",
     duration: { onset: 0.05, comeUp: 0.17, peak: 1, offset: 0.5, afterEffects: 1.5 },
     effects: { cognitiveComplexity: 5, euphoria: 5, intensity: 7, bodyLoad: 6, egoDissolve: 3, visuals: 3 },
-    flower: { petalCount: 6, petalShape: "rounded", primaryColor: "#16a34a", secondaryColor: "#fde047", petalRadius: 30, centerSize: 7, stemHeight: 28 }
+    flower: { petalCount: 7, petalShape: "cannabis", primaryColor: "#16a34a", secondaryColor: "#fde047", petalRadius: 30, centerSize: 5, stemHeight: 28 }
   },
   {
     id: "cocaine", name: "Cocaine", category: "Stimulants", subcategory: "Stimulants",
@@ -876,14 +876,14 @@ const extraDrugs = [
   {"id": "prochlorperazine", "name": "Prochlorperazine", "category": "Antipsychotics", "subcategory": "Phenothiazine", "duration": {"onset": 0.625, "comeUp": 0, "peak": 0, "offset": 0, "afterEffects": 5.375}, "effects": {"cognitiveComplexity": 3, "euphoria": 3, "intensity": 6, "bodyLoad": 3, "egoDissolve": 1, "visuals": 1}, "flower": {"petalCount": 4, "petalShape": "rounded", "primaryColor": "#d1d5db", "secondaryColor": "#9ca3af", "petalRadius": 36, "centerSize": 5, "stemHeight": 52}},
   {"id": "quetiapine", "name": "Quetiapine", "category": "Antipsychotics", "subcategory": "Dibenzothiazepine", "duration": {"onset": 0.5, "comeUp": 0, "peak": 3.75, "offset": 6.5, "afterEffects": 5.25}, "effects": {"cognitiveComplexity": 3, "euphoria": 2, "intensity": 10, "bodyLoad": 3, "egoDissolve": 1, "visuals": 1}, "flower": {"petalCount": 4, "petalShape": "rounded", "primaryColor": "#d1d5db", "secondaryColor": "#9ca3af", "petalRadius": 42, "centerSize": 5, "stemHeight": 92}},
   {"id": "risperidone", "name": "Risperidone", "category": "Antipsychotics", "subcategory": "Benzisoxazole", "duration": {"onset": 0.667, "comeUp": 0, "peak": 5.0, "offset": 3.0, "afterEffects": 7.333}, "effects": {"cognitiveComplexity": 3, "euphoria": 3, "intensity": 10, "bodyLoad": 4, "egoDissolve": 1, "visuals": 0}, "flower": {"petalCount": 4, "petalShape": "rounded", "primaryColor": "#6b7280", "secondaryColor": "#d1d5db", "petalRadius": 42, "centerSize": 5, "stemHeight": 92}},
-  {"id": "5f_akb48", "name": "5F-AKB48", "category": "Cannabinoids", "subcategory": "Indazolecarboxamide", "duration": {"onset": 0.333, "comeUp": 0, "peak": 0.333, "offset": 0.125, "afterEffects": 0.198}, "effects": {"cognitiveComplexity": 3, "euphoria": 6, "intensity": 5, "bodyLoad": 4, "egoDissolve": 2, "visuals": 3}, "flower": {"petalCount": 4, "petalShape": "rounded", "primaryColor": "#22c55e", "secondaryColor": "#16a34a", "petalRadius": 32, "centerSize": 6, "stemHeight": 29}},
-  {"id": "ab_fubinaca", "name": "AB-FUBINACA", "category": "Cannabinoids", "subcategory": "Indazolecarboxamide", "duration": {"onset": 0.333, "comeUp": 0, "peak": 0.75, "offset": 0.25, "afterEffects": 0.167}, "effects": {"cognitiveComplexity": 3, "euphoria": 5, "intensity": 7, "bodyLoad": 4, "egoDissolve": 2, "visuals": 2}, "flower": {"petalCount": 4, "petalShape": "rounded", "primaryColor": "#4ade80", "secondaryColor": "#22c55e", "petalRadius": 40, "centerSize": 6, "stemHeight": 31}},
-  {"id": "apica", "name": "APICA", "category": "Cannabinoids", "subcategory": "Indolecarboxamide", "duration": {"onset": 20.0, "comeUp": 0, "peak": 0.333, "offset": 0.125, "afterEffects": 5.115}, "effects": {"cognitiveComplexity": 3, "euphoria": 5, "intensity": 7, "bodyLoad": 3, "egoDissolve": 2, "visuals": 3}, "flower": {"petalCount": 4, "petalShape": "rounded", "primaryColor": "#22c55e", "secondaryColor": "#16a34a", "petalRadius": 35, "centerSize": 6, "stemHeight": 92}},
-  {"id": "cannabidiol", "name": "Cannabidiol", "category": "Cannabinoids", "subcategory": "Cannabinoid", "duration": {"onset": 0, "comeUp": 0.375, "peak": 0, "offset": 1.25, "afterEffects": 1.125}, "effects": {"cognitiveComplexity": 3, "euphoria": 5, "intensity": 7, "bodyLoad": 3, "egoDissolve": 1, "visuals": 3}, "flower": {"petalCount": 4, "petalShape": "rounded", "primaryColor": "#4ade80", "secondaryColor": "#22c55e", "petalRadius": 37, "centerSize": 5, "stemHeight": 37}},
-  {"id": "jwh_073", "name": "JWH-073", "category": "Cannabinoids", "subcategory": "Naphthoylindole", "duration": {"onset": 0.125, "comeUp": 0, "peak": 1.25, "offset": 0.125, "afterEffects": 0.375}, "effects": {"cognitiveComplexity": 3, "euphoria": 5, "intensity": 8, "bodyLoad": 4, "egoDissolve": 2, "visuals": 3}, "flower": {"petalCount": 4, "petalShape": "rounded", "primaryColor": "#86efac", "secondaryColor": "#4ade80", "petalRadius": 42, "centerSize": 6, "stemHeight": 33}},
-  {"id": "sts_135", "name": "STS-135", "category": "Cannabinoids", "subcategory": "Indolecarboxamide", "duration": {"onset": 27.5, "comeUp": 0.458, "peak": 0.333, "offset": 0.125, "afterEffects": 7.104}, "effects": {"cognitiveComplexity": 3, "euphoria": 5, "intensity": 5, "bodyLoad": 3, "egoDissolve": 1, "visuals": 2}, "flower": {"petalCount": 4, "petalShape": "rounded", "primaryColor": "#86efac", "secondaryColor": "#4ade80", "petalRadius": 31, "centerSize": 5, "stemHeight": 92}},
-  {"id": "thj_018", "name": "THJ-018", "category": "Cannabinoids", "subcategory": "Naphthoylindazole", "duration": {"onset": 0.125, "comeUp": 0, "peak": 1.25, "offset": 0.125, "afterEffects": 1.0}, "effects": {"cognitiveComplexity": 3, "euphoria": 5, "intensity": 6, "bodyLoad": 4, "egoDissolve": 1, "visuals": 4}, "flower": {"petalCount": 4, "petalShape": "rounded", "primaryColor": "#22c55e", "secondaryColor": "#16a34a", "petalRadius": 39, "centerSize": 5, "stemHeight": 36}},
-  {"id": "thj_2201", "name": "THJ-2201", "category": "Cannabinoids", "subcategory": "Naphthoylindazole", "duration": {"onset": 0.125, "comeUp": 0, "peak": 0.625, "offset": 0, "afterEffects": 0.75}, "effects": {"cognitiveComplexity": 3, "euphoria": 6, "intensity": 7, "bodyLoad": 4, "egoDissolve": 2, "visuals": 3}, "flower": {"petalCount": 4, "petalShape": "rounded", "primaryColor": "#22c55e", "secondaryColor": "#16a34a", "petalRadius": 40, "centerSize": 6, "stemHeight": 31}},
+  {"id": "5f_akb48", "name": "5F-AKB48", "category": "Cannabinoids", "subcategory": "Indazolecarboxamide", "duration": {"onset": 0.333, "comeUp": 0, "peak": 0.333, "offset": 0.125, "afterEffects": 0.198}, "effects": {"cognitiveComplexity": 3, "euphoria": 6, "intensity": 5, "bodyLoad": 4, "egoDissolve": 2, "visuals": 3}, "flower": {"petalCount": 7, "petalShape": "cannabis", "primaryColor": "#22c55e", "secondaryColor": "#16a34a", "petalRadius": 32, "centerSize": 6, "stemHeight": 29}},
+  {"id": "ab_fubinaca", "name": "AB-FUBINACA", "category": "Cannabinoids", "subcategory": "Indazolecarboxamide", "duration": {"onset": 0.333, "comeUp": 0, "peak": 0.75, "offset": 0.25, "afterEffects": 0.167}, "effects": {"cognitiveComplexity": 3, "euphoria": 5, "intensity": 7, "bodyLoad": 4, "egoDissolve": 2, "visuals": 2}, "flower": {"petalCount": 7, "petalShape": "cannabis", "primaryColor": "#4ade80", "secondaryColor": "#22c55e", "petalRadius": 40, "centerSize": 6, "stemHeight": 31}},
+  {"id": "apica", "name": "APICA", "category": "Cannabinoids", "subcategory": "Indolecarboxamide", "duration": {"onset": 20.0, "comeUp": 0, "peak": 0.333, "offset": 0.125, "afterEffects": 5.115}, "effects": {"cognitiveComplexity": 3, "euphoria": 5, "intensity": 7, "bodyLoad": 3, "egoDissolve": 2, "visuals": 3}, "flower": {"petalCount": 7, "petalShape": "cannabis", "primaryColor": "#22c55e", "secondaryColor": "#16a34a", "petalRadius": 35, "centerSize": 6, "stemHeight": 92}},
+  {"id": "cannabidiol", "name": "Cannabidiol", "category": "Cannabinoids", "subcategory": "Cannabinoid", "duration": {"onset": 0, "comeUp": 0.375, "peak": 0, "offset": 1.25, "afterEffects": 1.125}, "effects": {"cognitiveComplexity": 3, "euphoria": 5, "intensity": 7, "bodyLoad": 3, "egoDissolve": 1, "visuals": 3}, "flower": {"petalCount": 7, "petalShape": "cannabis", "primaryColor": "#4ade80", "secondaryColor": "#22c55e", "petalRadius": 37, "centerSize": 5, "stemHeight": 37}},
+  {"id": "jwh_073", "name": "JWH-073", "category": "Cannabinoids", "subcategory": "Naphthoylindole", "duration": {"onset": 0.125, "comeUp": 0, "peak": 1.25, "offset": 0.125, "afterEffects": 0.375}, "effects": {"cognitiveComplexity": 3, "euphoria": 5, "intensity": 8, "bodyLoad": 4, "egoDissolve": 2, "visuals": 3}, "flower": {"petalCount": 7, "petalShape": "cannabis", "primaryColor": "#86efac", "secondaryColor": "#4ade80", "petalRadius": 42, "centerSize": 6, "stemHeight": 33}},
+  {"id": "sts_135", "name": "STS-135", "category": "Cannabinoids", "subcategory": "Indolecarboxamide", "duration": {"onset": 27.5, "comeUp": 0.458, "peak": 0.333, "offset": 0.125, "afterEffects": 7.104}, "effects": {"cognitiveComplexity": 3, "euphoria": 5, "intensity": 5, "bodyLoad": 3, "egoDissolve": 1, "visuals": 2}, "flower": {"petalCount": 7, "petalShape": "cannabis", "primaryColor": "#86efac", "secondaryColor": "#4ade80", "petalRadius": 31, "centerSize": 5, "stemHeight": 92}},
+  {"id": "thj_018", "name": "THJ-018", "category": "Cannabinoids", "subcategory": "Naphthoylindazole", "duration": {"onset": 0.125, "comeUp": 0, "peak": 1.25, "offset": 0.125, "afterEffects": 1.0}, "effects": {"cognitiveComplexity": 3, "euphoria": 5, "intensity": 6, "bodyLoad": 4, "egoDissolve": 1, "visuals": 4}, "flower": {"petalCount": 7, "petalShape": "cannabis", "primaryColor": "#22c55e", "secondaryColor": "#16a34a", "petalRadius": 39, "centerSize": 5, "stemHeight": 36}},
+  {"id": "thj_2201", "name": "THJ-2201", "category": "Cannabinoids", "subcategory": "Naphthoylindazole", "duration": {"onset": 0.125, "comeUp": 0, "peak": 0.625, "offset": 0, "afterEffects": 0.75}, "effects": {"cognitiveComplexity": 3, "euphoria": 6, "intensity": 7, "bodyLoad": 4, "egoDissolve": 2, "visuals": 3}, "flower": {"petalCount": 7, "petalShape": "cannabis", "primaryColor": "#22c55e", "secondaryColor": "#16a34a", "petalRadius": 40, "centerSize": 6, "stemHeight": 31}},
   {"id": "benzydamine", "name": "Benzydamine", "category": "Deliriants", "subcategory": "Indazole", "duration": {"onset": 0.667, "comeUp": 0, "peak": 4.5, "offset": 5.5, "afterEffects": 2.667}, "effects": {"cognitiveComplexity": 6, "euphoria": 2, "intensity": 10, "bodyLoad": 8, "egoDissolve": 6, "visuals": 7}, "flower": {"petalCount": 6, "petalShape": "wispy", "primaryColor": "#44403c", "secondaryColor": "#1c1917", "petalRadius": 42, "centerSize": 12, "stemHeight": 85}},
   {"id": "mirtazapine", "name": "Mirtazapine", "category": "Deliriants", "subcategory": "Piperazinoazepine", "duration": {"onset": 0.375, "comeUp": 0, "peak": 2.25, "offset": 4.0, "afterEffects": 12.375}, "effects": {"cognitiveComplexity": 6, "euphoria": 2, "intensity": 8, "bodyLoad": 9, "egoDissolve": 5, "visuals": 8}, "flower": {"petalCount": 7, "petalShape": "wispy", "primaryColor": "#1c1917", "secondaryColor": "#78716c", "petalRadius": 42, "centerSize": 11, "stemHeight": 92}},
   {"id": "promethazine", "name": "Promethazine", "category": "Deliriants", "subcategory": "Phenothiazine", "duration": {"onset": 0.75, "comeUp": 0.667, "peak": 1.5, "offset": 4.0, "afterEffects": 1.729}, "effects": {"cognitiveComplexity": 6, "euphoria": 2, "intensity": 6, "bodyLoad": 8, "egoDissolve": 6, "visuals": 7}, "flower": {"petalCount": 7, "petalShape": "wispy", "primaryColor": "#1c1917", "secondaryColor": "#78716c", "petalRadius": 34, "centerSize": 12, "stemHeight": 63}},
@@ -2294,6 +2294,32 @@ function petalPath(shape, r) {
     case 'wispy':
       // Ethereal, hollow, cloud-like — wide in middle, pinched at base and tip
       return `M0,0 C${r*0.5},-${r*0.15} ${r*0.55},-${r*0.4} ${r*0.35},-${r*0.55} C${r*0.2},-${r*0.65} ${r*0.15},-${r*0.82} 0,-${r} C-${r*0.15},-${r*0.82} -${r*0.2},-${r*0.65} -${r*0.35},-${r*0.55} C-${r*0.55},-${r*0.4} -${r*0.5},-${r*0.15} 0,0Z`;
+    case 'cannabis': {
+      // Cannabis fan leaf — serrated edges, narrow pointed leaflet
+      const w = r * 0.18; // leaflet half-width
+      const s = r * 0.06; // serration depth
+      return `M0,0 ` +
+        `C${w},-${r*0.05} ${w*1.2},-${r*0.12} ${w+s},-${r*0.18} ` +  // first serration out
+        `L${w},-${r*0.22} ` +  // serration in
+        `L${w+s},-${r*0.30} ` + // second serration out
+        `L${w*0.9},-${r*0.35} ` + // in
+        `L${w+s},-${r*0.44} ` + // third serration out
+        `L${w*0.8},-${r*0.50} ` + // in
+        `L${w*0.9+s},-${r*0.58} ` + // fourth serration
+        `L${w*0.65},-${r*0.65} ` + // in
+        `L${w*0.7},-${r*0.75} ` + // fifth serration
+        `C${w*0.4},-${r*0.85} ${w*0.2},-${r*0.93} 0,-${r} ` + // tip
+        `C-${w*0.2},-${r*0.93} -${w*0.4},-${r*0.85} -${w*0.7},-${r*0.75} ` +
+        `L-${w*0.65},-${r*0.65} ` +
+        `L-${w*0.9+s},-${r*0.58} ` +
+        `L-${w*0.8},-${r*0.50} ` +
+        `L-${w+s},-${r*0.44} ` +
+        `L-${w*0.9},-${r*0.35} ` +
+        `L-${w+s},-${r*0.30} ` +
+        `L-${w},-${r*0.22} ` +
+        `L-${w+s},-${r*0.18} ` +
+        `C-${w*1.2},-${r*0.12} -${w},-${r*0.05} 0,0Z`;
+    }
     default:
       return petalPath('rounded', r);
   }
@@ -3849,6 +3875,46 @@ function renderFlower(g, drug, progress, isSolo, now) {
       petal.setAttribute('opacity', colorOpacity * opacityPulse);
       petalG.appendChild(petal);
       headG.appendChild(petalG);
+    }
+  }
+
+  // Trichome sparkles for cannabis-shaped petals (crystalline dots on leaves)
+  if (f.petalShape === 'cannabis' && petalR > 3 && colorOpacity > 0.1) {
+    const trichCount = Math.floor(8 + bloomScale * 12);
+    for (let tr = 0; tr < trichCount; tr++) {
+      const trAngle = (tr / trichCount) * Math.PI * 2 + time * 0.15;
+      const trDist = petalR * (0.25 + (tr % 5) * 0.13) * bloomScale;
+      const tx = Math.cos(trAngle) * trDist;
+      const ty = Math.sin(trAngle) * trDist - petalR * 0.15;
+      const twinkle = Math.pow(Math.max(0, Math.sin(time * 2.5 + tr * 1.7)), 6);
+      const trAlpha = colorOpacity * (0.3 + twinkle * 0.7) * bloomScale;
+      const dot = document.createElementNS(svgNS, 'circle');
+      dot.setAttribute('cx', tx);
+      dot.setAttribute('cy', ty);
+      dot.setAttribute('r', 0.5 + twinkle * 1.0);
+      dot.setAttribute('fill', 'white');
+      dot.setAttribute('opacity', trAlpha);
+      headG.appendChild(dot);
+    }
+    // Orange pistil hairs near center
+    if (bloomScale > 0.3) {
+      for (let p = 0; p < 5; p++) {
+        const pAngle = (p / 5) * Math.PI * 2 + time * 0.05;
+        const px1 = Math.cos(pAngle) * centerR * 1.2;
+        const py1 = Math.sin(pAngle) * centerR * 1.2;
+        const px2 = Math.cos(pAngle + 0.2) * centerR * 2.5;
+        const py2 = Math.sin(pAngle + 0.2) * centerR * 2.5;
+        const hair = document.createElementNS(svgNS, 'line');
+        hair.setAttribute('x1', px1);
+        hair.setAttribute('y1', py1);
+        hair.setAttribute('x2', px2);
+        hair.setAttribute('y2', py2);
+        hair.setAttribute('stroke', '#f97316'); // orange pistils
+        hair.setAttribute('stroke-width', 0.8 * sc);
+        hair.setAttribute('stroke-linecap', 'round');
+        hair.setAttribute('opacity', colorOpacity * 0.7);
+        headG.appendChild(hair);
+      }
     }
   }
 
