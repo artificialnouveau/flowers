@@ -670,7 +670,7 @@
     <span><b>Color</b> = drug class (warm reds/yellows: stimulants, cool blues: depressants, purples/greens: psychedelics, grays: dissociatives, dark: deliriants)</span>
     <span><b>Size</b> = intensity</span>
     <span><b>Sway</b> = body load</span>
-    <span><b>Center</b> = ego dissolution (the center disc is larger and pulses more during peak for substances that dissolve the sense of self. A big, breathing center means a stronger loss of identity)</span>
+    <span><b>Center</b> = ego dissolution (during peak, the center expands outward and its boundaries dissolve into soft rings. The inner core fades as the sense of self dissolves. High ego dissolution = the center merges with the surroundings)</span>
     <span><b>Stem</b> = total duration</span>
     <span><b>Glow</b> = peak phase</span>
     <span><b>Background</b> = hallucination intensity (brighter = stronger visuals)</span>
@@ -3724,9 +3724,13 @@ function renderFlower(g, drug, progress, isSolo, now) {
   const swayAmt = (drug.effects.bodyLoad * 0.2 + 1.2) * bloomScale;
   const sway = swayAmt * (Math.sin(time * 1.1) * 0.6 + windBase * 0.5);
 
-  // Ego dissolution → center pulsation during peak
+  // Ego dissolution → center dissolves during peak (boundary between self and world blurs)
   const egoLevel = drug.effects.egoDissolve / 10;
-  const egoExpand = glowOn ? (1 + egoLevel * 0.5 * (0.5 + 0.5 * Math.sin(time * 2.5))) : 1;
+  // Smooth slow breathing expansion — high ego = center expands and diffuses
+  const egoBreath = 0.5 + 0.5 * Math.sin(time * 0.8); // slow, smooth
+  const egoExpand = glowOn ? (1 + egoLevel * 0.6 * egoBreath) : 1;
+  // How much the center "dissolves" — fades and blurs outward
+  const egoDissolveAmt = glowOn ? egoLevel : 0;
 
   // Clear and rebuild
   while (g.firstChild) g.removeChild(g.firstChild);
@@ -3833,36 +3837,45 @@ function renderFlower(g, drug, progress, isSolo, now) {
     }
   }
 
-  // Center disc
+  // Center disc — ego dissolution makes it expand, diffuse, and lose boundaries
   if (centerR > 0.5) {
-    // Ego dissolution halo — glowing aura around center for high ego dissolve
-    if (egoLevel > 0.3 && glowOn) {
-      const haloR = centerR * egoExpand * (1.5 + egoLevel * 0.8);
-      const haloPulse = 0.5 + 0.5 * Math.sin(time * 3);
-      const haloAlpha = (egoLevel - 0.3) * 0.35 * haloPulse * colorOpacity;
-      const halo = document.createElementNS(svgNS, 'circle');
-      halo.setAttribute('cx', 0);
-      halo.setAttribute('cy', 0);
-      halo.setAttribute('r', haloR);
-      halo.setAttribute('fill', f.secondaryColor);
-      halo.setAttribute('opacity', haloAlpha);
-      headG.appendChild(halo);
+    // Multiple soft dissolving rings for high ego dissolution (boundaries blurring)
+    if (egoDissolveAmt > 0.2) {
+      const rings = 3 + Math.floor(egoDissolveAmt * 4);
+      for (let r = rings; r >= 1; r--) {
+        const ringT = r / rings;
+        const ringR = centerR * egoExpand * (1 + ringT * egoDissolveAmt * 2.5);
+        const ringBreath = 1 + Math.sin(time * 0.6 + r * 0.7) * 0.08 * egoDissolveAmt;
+        const ringAlpha = egoDissolveAmt * 0.15 * (1 - ringT * 0.7) * colorOpacity * ringBreath;
+        const ring = document.createElementNS(svgNS, 'circle');
+        ring.setAttribute('cx', 0);
+        ring.setAttribute('cy', 0);
+        ring.setAttribute('r', ringR * ringBreath);
+        ring.setAttribute('fill', f.secondaryColor);
+        ring.setAttribute('opacity', ringAlpha);
+        headG.appendChild(ring);
+      }
     }
 
+    // Outer disc — becomes more transparent and larger with ego dissolution
+    const outerAlpha = colorOpacity * (0.85 - egoDissolveAmt * 0.4);
     const outer = document.createElementNS(svgNS, 'circle');
     outer.setAttribute('cx', 0);
     outer.setAttribute('cy', 0);
     outer.setAttribute('r', centerR * egoExpand);
     outer.setAttribute('fill', f.secondaryColor);
-    outer.setAttribute('opacity', colorOpacity * 0.85);
+    outer.setAttribute('opacity', outerAlpha);
     headG.appendChild(outer);
 
+    // Inner disc — shrinks and fades with ego dissolution (the "self" dissolving)
+    const innerScale = 1 - egoDissolveAmt * 0.5; // shrinks as ego dissolves
+    const innerAlpha = colorOpacity * (1 - egoDissolveAmt * 0.6);
     const inner = document.createElementNS(svgNS, 'circle');
     inner.setAttribute('cx', 0);
     inner.setAttribute('cy', 0);
-    inner.setAttribute('r', centerR * 0.45 * egoExpand);
+    inner.setAttribute('r', centerR * 0.45 * egoExpand * innerScale);
     inner.setAttribute('fill', f.primaryColor);
-    inner.setAttribute('opacity', colorOpacity);
+    inner.setAttribute('opacity', innerAlpha);
     headG.appendChild(inner);
   }
 
