@@ -1288,7 +1288,7 @@ function setupOverlay() {
     if (!soloState) return;
     // Resume from scrub position
     const progress = document.getElementById('timeline').value / 1000;
-    soloState.startTime = performance.now() - (progress * Math.max(getTotalDuration(soloState.drug), 5) * 1000);
+    soloState.startTime = performance.now() - (progress * getSoloDisplayDur() * 1000);
     soloState.scrubbing = false;
   });
 
@@ -1364,6 +1364,7 @@ function openSolo(drug) {
   updateSoundBtn('soloSoundBtn');
 
   const totalDur = getTotalDuration(drug);
+  const soloSpeed = 1.5; // 50% slower than real-time compression
   const minAnimDur = 5; // minimum 5 seconds of animation for smooth playback
   document.getElementById('totalLabel').textContent = formatTime(totalDur);
   document.getElementById('timeline').value = 0;
@@ -1374,7 +1375,7 @@ function openSolo(drug) {
     soloState.drug = applyDose(soloState.baseDrug, getDoseMultiplier());
     const activeDrug = soloState.drug;
     const curTotalDur = getTotalDuration(activeDrug);
-    const displayDur = Math.max(curTotalDur, minAnimDur);
+    const displayDur = Math.max(curTotalDur * soloSpeed, minAnimDur);
     if (soloState.playing && !soloState.scrubbing) {
       const elapsed = (now - soloState.startTime) / 1000;
       const progress = Math.min(elapsed / displayDur, 1);
@@ -1410,7 +1411,7 @@ function closeSolo() {
 }
 
 function getSoloDisplayDur() {
-  return Math.max(getTotalDuration(soloState.drug), 5);
+  return Math.max(getTotalDuration(soloState.drug) * 1.5, 5);
 }
 
 function toggleSoloPlay() {
@@ -1644,7 +1645,7 @@ function openCompare() {
   const hybridDrug = hybridResult.hybrid;
   const hybridG = hybridResult.g;
 
-  const maxDur = Math.max(getTotalDuration(drug1), getTotalDuration(drug2));
+  const maxDur = Math.max(getTotalDuration(drug1), getTotalDuration(drug2)) * 1.5; // 50% slower
   document.getElementById('compareTotalLabel').textContent = formatTime(maxDur);
   document.getElementById('compareTimeline').value = 0;
   setHash(drug1.id + '+' + drug2.id);
@@ -2632,7 +2633,7 @@ function updateSoloBackground(drug, progress, now) {
   const ego = drug.effects.egoDissolve / 10;
   const bodyLoad = drug.effects.bodyLoad / 10;
   // Breathing effect — whole scene pulses
-  const breathe = 1 + Math.sin(time * 1.5) * 0.06 * intensity + Math.sin(time * 2.3) * 0.03 * intensity;
+  const breathe = 1 + Math.sin(time * 1.5) * 0.15 * intensity + Math.sin(time * 2.3) * 0.08 * intensity + Math.sin(time * 0.7) * 0.1 * intensity;
 
   // ── Layer 1: Deep color field with drifting ──
   // Multiple overlapping gradients that drift organically (simulates "color shifting")
@@ -2656,68 +2657,97 @@ function updateSoloBackground(drug, progress, now) {
   }
 
   // ── Layer 2: Alex Grey-style energy lattice / nervous system web ──
-  // Glowing interconnected web of lines that pulse with energy, like neural pathways
-  if (intensity > 0.1) {
+  // Dense glowing interconnected web pulsing with energy, like neural pathways on fire
+  if (intensity > 0.05) {
     ctx.globalCompositeOperation = 'screen';
-    const gridSize = 30 + (1 - intensity) * 40; // denser at higher intensity
-    const cols = Math.ceil(W / gridSize) + 1;
-    const rows = Math.ceil(H / gridSize) + 1;
-    const webAlpha = intensity * visuals * 0.35;
+    const gridSize = 20 + (1 - intensity) * 25; // much denser grid
+    const cols = Math.ceil(W / gridSize) + 2;
+    const rows = Math.ceil(H / gridSize) + 2;
+    const webAlpha = intensity * visuals * 0.65;
 
     for (let row = 0; row < rows; row++) {
       for (let col = 0; col < cols; col++) {
-        // Each node drifts organically
-        const nodePhase = col * 0.7 + row * 1.1 + time * 0.4;
-        const driftX = Math.sin(nodePhase) * gridSize * 0.3 * intensity;
-        const driftY = Math.cos(nodePhase * 0.8 + 0.5) * gridSize * 0.3 * intensity;
-        const nx = col * gridSize + driftX;
-        const ny = row * gridSize + driftY;
+        // Each node drifts organically with more chaos
+        const nodePhase = col * 0.7 + row * 1.1 + time * 0.6;
+        const driftX = Math.sin(nodePhase) * gridSize * 0.45 * intensity + Math.sin(time * 1.3 + col * 0.5) * 8 * intensity;
+        const driftY = Math.cos(nodePhase * 0.8 + 0.5) * gridSize * 0.45 * intensity + Math.cos(time * 1.1 + row * 0.5) * 8 * intensity;
+        const nx = col * gridSize + driftX - gridSize;
+        const ny = row * gridSize + driftY - gridSize;
 
-        // Pulse brightness based on distance from center and time
+        // Multiple overlapping wave pulses for richer animation
         const dx = nx - cx, dy = ny - cy;
         const dist = Math.sqrt(dx * dx + dy * dy);
         const maxDist = Math.sqrt(cx * cx + cy * cy);
-        const wavePulse = Math.sin(dist * 0.02 - time * 2.5) * 0.5 + 0.5;
-        const nodeAlpha = webAlpha * wavePulse * (1 - dist / maxDist * 0.5);
+        const wavePulse1 = Math.sin(dist * 0.025 - time * 3.0) * 0.5 + 0.5;
+        const wavePulse2 = Math.sin(dist * 0.015 + time * 1.8 + 1.5) * 0.3 + 0.3;
+        const wavePulse = Math.min(1, wavePulse1 + wavePulse2);
+        const nodeAlpha = webAlpha * wavePulse * (1 - dist / maxDist * 0.3);
 
         if (nodeAlpha < 0.01) continue;
 
-        const t2 = (dist / maxDist + Math.sin(time * 0.3 + dist * 0.01)) * 0.5;
+        const t2 = (dist / maxDist + Math.sin(time * 0.4 + dist * 0.015)) * 0.5;
         const nc = lerpColor(drugRgb, drugAccent, t2);
 
-        // Draw connections to right and down neighbors
+        // Helper to draw a curved connection between two nodes
+        const drawConnection = (x1, y1, x2, y2, alpha, width) => {
+          ctx.beginPath();
+          ctx.moveTo(x1, y1);
+          const midX = (x1 + x2) / 2 + Math.sin(time * 1.8 + nodePhase) * 12 * intensity;
+          const midY = (y1 + y2) / 2 + Math.cos(time * 1.5 + nodePhase) * 12 * intensity;
+          ctx.quadraticCurveTo(midX, midY, x2, y2);
+          ctx.strokeStyle = `rgba(${nc[0]},${nc[1]},${nc[2]},${alpha})`;
+          ctx.lineWidth = width;
+          ctx.stroke();
+        };
+
+        const getNeighborPos = (c, r2) => {
+          const np = c * 0.7 + r2 * 1.1 + time * 0.6;
+          return [
+            c * gridSize + Math.sin(np) * gridSize * 0.45 * intensity + Math.sin(time * 1.3 + c * 0.5) * 8 * intensity - gridSize,
+            r2 * gridSize + Math.cos(np * 0.8 + 0.5) * gridSize * 0.45 * intensity + Math.cos(time * 1.1 + r2 * 0.5) * 8 * intensity - gridSize
+          ];
+        };
+
+        const connAlpha = nodeAlpha * 0.7;
+        const connWidth = 0.8 + intensity * 3 * wavePulse;
+
+        // Right connection
         if (col < cols - 1) {
-          const nnx = (col + 1) * gridSize + Math.sin(nodePhase + 0.7) * gridSize * 0.3 * intensity;
-          const nny = row * gridSize + Math.cos((nodePhase + 0.7) * 0.8 + 0.5) * gridSize * 0.3 * intensity;
-          ctx.beginPath();
-          ctx.moveTo(nx, ny);
-          // Curved connection for organic feel
-          const midX = (nx + nnx) / 2 + Math.sin(time * 1.8 + nodePhase) * 5 * intensity;
-          const midY = (ny + nny) / 2 + Math.cos(time * 1.5 + nodePhase) * 5 * intensity;
-          ctx.quadraticCurveTo(midX, midY, nnx, nny);
-          ctx.strokeStyle = `rgba(${nc[0]},${nc[1]},${nc[2]},${nodeAlpha * 0.6})`;
-          ctx.lineWidth = 0.5 + intensity * 1.5 * wavePulse;
-          ctx.stroke();
+          const [nnx, nny] = getNeighborPos(col + 1, row);
+          drawConnection(nx, ny, nnx, nny, connAlpha, connWidth);
         }
+        // Down connection
         if (row < rows - 1) {
-          const nnx = col * gridSize + Math.sin(nodePhase + 1.1 * cols) * gridSize * 0.3 * intensity;
-          const nny = (row + 1) * gridSize + Math.cos((nodePhase + 1.1 * cols) * 0.8 + 0.5) * gridSize * 0.3 * intensity;
-          ctx.beginPath();
-          ctx.moveTo(nx, ny);
-          const midX = (nx + nnx) / 2 + Math.cos(time * 1.6 + nodePhase) * 5 * intensity;
-          const midY = (ny + nny) / 2 + Math.sin(time * 1.3 + nodePhase) * 5 * intensity;
-          ctx.quadraticCurveTo(midX, midY, nnx, nny);
-          ctx.strokeStyle = `rgba(${nc[0]},${nc[1]},${nc[2]},${nodeAlpha * 0.6})`;
-          ctx.lineWidth = 0.5 + intensity * 1.5 * wavePulse;
-          ctx.stroke();
+          const [nnx, nny] = getNeighborPos(col, row + 1);
+          drawConnection(nx, ny, nnx, nny, connAlpha, connWidth);
+        }
+        // Diagonal connections for denser web
+        if (col < cols - 1 && row < rows - 1 && intensity > 0.3) {
+          const [nnx, nny] = getNeighborPos(col + 1, row + 1);
+          drawConnection(nx, ny, nnx, nny, connAlpha * 0.5, connWidth * 0.6);
+        }
+        if (col > 0 && row < rows - 1 && intensity > 0.3) {
+          const [nnx, nny] = getNeighborPos(col - 1, row + 1);
+          drawConnection(nx, ny, nnx, nny, connAlpha * 0.5, connWidth * 0.6);
         }
 
-        // Glowing node dot
-        if (wavePulse > 0.6) {
-          ctx.beginPath();
-          ctx.arc(nx, ny, 1 + intensity * 2 * wavePulse, 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(${nc[0]},${nc[1]},${nc[2]},${nodeAlpha * 0.8})`;
-          ctx.fill();
+        // Glowing node dots — always visible, pulsing brighter
+        const nodeR = 1.5 + intensity * 4 * wavePulse;
+        const nodeGlow = nodeAlpha * (0.6 + wavePulse * 0.4);
+        ctx.beginPath();
+        ctx.arc(nx, ny, nodeR, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(${nc[0]},${nc[1]},${nc[2]},${nodeGlow})`;
+        ctx.fill();
+
+        // Bright hot-center glow on strongly pulsing nodes
+        if (wavePulse > 0.7 && intensity > 0.4) {
+          const glowR = nodeR * 3;
+          const grd = ctx.createRadialGradient(nx, ny, 0, nx, ny, glowR);
+          grd.addColorStop(0, `rgba(255,255,255,${nodeGlow * 0.4})`);
+          grd.addColorStop(0.3, `rgba(${nc[0]},${nc[1]},${nc[2]},${nodeGlow * 0.3})`);
+          grd.addColorStop(1, `rgba(${nc[0]},${nc[1]},${nc[2]},0)`);
+          ctx.fillStyle = grd;
+          ctx.fillRect(nx - glowR, ny - glowR, glowR * 2, glowR * 2);
         }
       }
     }
@@ -2834,32 +2864,65 @@ function updateSoloBackground(drug, progress, now) {
   }
 
   // ── Layer 5: Tracer echoes — concentric afterimage rings expanding ──
-  if (intensity > 0.15) {
+  if (intensity > 0.1) {
     ctx.globalCompositeOperation = 'screen';
-    const tracerCount = Math.floor(4 + visuals * 10);
-    const tracerAlpha = (intensity - 0.15) * 0.5;
+    const tracerCount = Math.floor(8 + visuals * 18);
+    const tracerAlpha = (intensity - 0.1) * 0.8;
 
     for (let tr = 0; tr < tracerCount; tr++) {
-      const trPhase = time * 0.7 + tr * 0.35;
-      const trProgress = (trPhase % 4) / 4;
-      const trR = trProgress * Math.max(W, H) * 0.5 * breathe;
-      const trFade = Math.pow(1 - trProgress, 1.5);
-      const trSides = sides + Math.floor(tr % 3);
+      const trPhase = time * 0.55 + tr * 0.28;
+      const trProgress = (trPhase % 5) / 5;
+      const trR = trProgress * Math.max(W, H) * 0.6 * breathe;
+      const trFade = Math.pow(1 - trProgress, 1.2);
+      const trSides = sides + Math.floor(tr % 4);
 
-      // Morphing polygon ring (not perfect circle — drifting)
+      // Morphing polygon ring with exaggerated warping
       ctx.beginPath();
-      for (let i = 0; i <= 48; i++) {
-        const a = (Math.PI * 2 / 48) * i;
-        const morph = Math.sin(a * trSides + time * 1.2 + tr) * trR * 0.08 * intensity;
-        const x = cx + Math.cos(a) * (trR + morph);
-        const y = cy + Math.sin(a) * (trR + morph);
+      const pts = 64;
+      for (let i = 0; i <= pts; i++) {
+        const a = (Math.PI * 2 / pts) * i;
+        const morph1 = Math.sin(a * trSides + time * 1.5 + tr) * trR * 0.15 * intensity;
+        const morph2 = Math.cos(a * (trSides + 1) - time * 0.9 + tr * 0.7) * trR * 0.08 * intensity;
+        const wobble = Math.sin(a * 2 + time * 2.0 + tr * 1.3) * trR * 0.04 * intensity;
+        const x = cx + Math.cos(a) * (trR + morph1 + morph2 + wobble);
+        const y = cy + Math.sin(a) * (trR + morph1 + morph2 + wobble);
         if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
       }
       ctx.closePath();
-      const tc = lerpColor(drugRgb, drugAccent, (tr / tracerCount + Math.sin(time * 0.3)) * 0.5 + 0.25);
-      ctx.strokeStyle = `rgba(${tc[0]},${tc[1]},${tc[2]},${tracerAlpha * trFade * 0.4})`;
-      ctx.lineWidth = 1.5 + intensity * 3 * trFade;
+      const tc = lerpColor(drugRgb, drugAccent, (tr / tracerCount + Math.sin(time * 0.4 + tr * 0.2)) * 0.5 + 0.25);
+
+      // Glow halo behind the ring
+      if (trFade > 0.3 && intensity > 0.3) {
+        ctx.save();
+        ctx.shadowColor = `rgba(${tc[0]},${tc[1]},${tc[2]},${tracerAlpha * trFade * 0.3})`;
+        ctx.shadowBlur = 8 + intensity * 15;
+        ctx.strokeStyle = `rgba(${tc[0]},${tc[1]},${tc[2]},${tracerAlpha * trFade * 0.5})`;
+        ctx.lineWidth = 2 + intensity * 5 * trFade;
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      // Main ring stroke
+      ctx.strokeStyle = `rgba(${tc[0]},${tc[1]},${tc[2]},${tracerAlpha * trFade * 0.6})`;
+      ctx.lineWidth = 1.5 + intensity * 4.5 * trFade;
       ctx.stroke();
+
+      // Inner echo ring (afterimage of afterimage)
+      if (trProgress < 0.7 && intensity > 0.4) {
+        ctx.beginPath();
+        const echoR = trR * 0.92;
+        for (let i = 0; i <= pts; i++) {
+          const a = (Math.PI * 2 / pts) * i;
+          const morph = Math.sin(a * trSides + time * 1.5 + tr + 0.5) * echoR * 0.12 * intensity;
+          const x = cx + Math.cos(a) * (echoR + morph);
+          const y = cy + Math.sin(a) * (echoR + morph);
+          if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+        ctx.closePath();
+        ctx.strokeStyle = `rgba(${tc[0]},${tc[1]},${tc[2]},${tracerAlpha * trFade * 0.2})`;
+        ctx.lineWidth = 0.8 + intensity * 2 * trFade;
+        ctx.stroke();
+      }
     }
   }
 
@@ -2925,11 +2988,26 @@ function updateSoloBackground(drug, progress, now) {
   }
 
   // ── Layer 8: Breathing vignette ──
+  // Inner color glow that pulses with the breathing
+  ctx.globalCompositeOperation = 'screen';
+  const innerGlowR = Math.min(W, H) * (0.25 + intensity * 0.15) * breathe;
+  const innerGrd = ctx.createRadialGradient(cx, cy, 0, cx, cy, innerGlowR);
+  const glowAlpha = intensity * 0.12 * (0.7 + 0.3 * Math.sin(time * 1.5));
+  innerGrd.addColorStop(0, `rgba(${drugRgb[0]},${drugRgb[1]},${drugRgb[2]},${glowAlpha})`);
+  innerGrd.addColorStop(0.5, `rgba(${drugAccent[0]},${drugAccent[1]},${drugAccent[2]},${glowAlpha * 0.4})`);
+  innerGrd.addColorStop(1, `rgba(${drugRgb[0]},${drugRgb[1]},${drugRgb[2]},0)`);
+  ctx.fillStyle = innerGrd;
+  ctx.fillRect(0, 0, W, H);
+
+  // Dark vignette edges that dramatically breathe in and out
   ctx.globalCompositeOperation = 'source-over';
-  const vigR = W * (0.15 + intensity * 0.1) * breathe;
-  const vignetteGrd = ctx.createRadialGradient(cx, cy, vigR, cx, cy, W * 0.75);
+  const vigBreath = breathe * (1 + Math.sin(time * 0.7) * 0.08 * intensity); // extra slow breath layer
+  const vigR = W * (0.08 + intensity * 0.18) * vigBreath;
+  const vigOuter = W * (0.55 + intensity * 0.15);
+  const vignetteGrd = ctx.createRadialGradient(cx, cy, vigR, cx, cy, vigOuter);
   vignetteGrd.addColorStop(0, `rgba(${dark[0]},${dark[1]},${dark[2]},0)`);
-  vignetteGrd.addColorStop(1, `rgba(${dark[0]},${dark[1]},${dark[2]},${0.35 + (1 - intensity) * 0.5})`);
+  vignetteGrd.addColorStop(0.6, `rgba(${dark[0]},${dark[1]},${dark[2]},${0.15 + (1 - intensity) * 0.25})`);
+  vignetteGrd.addColorStop(1, `rgba(${dark[0]},${dark[1]},${dark[2]},${0.55 + (1 - intensity) * 0.4})`);
   ctx.fillStyle = vignetteGrd;
   ctx.fillRect(0, 0, W, H);
 }
