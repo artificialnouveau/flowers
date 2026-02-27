@@ -1324,6 +1324,11 @@ function setupOverlay() {
 
   document.getElementById('soloSoundBtn').addEventListener('click', () => {
     AudioEngine.toggleMute();
+    // On mobile, audio may have failed to init on openSolo (no user gesture).
+    // Re-attempt start now that we're in a direct tap handler.
+    if (!AudioEngine.isMuted() && soloState) {
+      try { AudioEngine.start(soloState.drug, 'solo'); } catch(e) {}
+    }
     updateSoundBtn('soloSoundBtn');
   });
 }
@@ -2010,6 +2015,10 @@ function setupCompareMode() {
 
   document.getElementById('compareSoundBtn').addEventListener('click', () => {
     AudioEngine.toggleMute();
+    // Re-attempt audio init on mobile (needs direct user gesture)
+    if (!AudioEngine.isMuted() && compareState) {
+      try { AudioEngine.startDual(compareState.drugs[0], compareState.drugs[1]); } catch(e) {}
+    }
     updateSoundBtn('compareSoundBtn');
   });
 
@@ -2679,8 +2688,16 @@ const AudioEngine = (() => {
 
   function toggleMute() {
     muted = !muted;
-    if (!ctx) return muted;
-    masterGain.gain.setTargetAtTime(muted ? 0 : 0.8, ctx.currentTime, 0.3);
+    // On mobile, AudioContext must be created/resumed inside a user gesture.
+    // toggleMute is always called from a click/tap handler, so this is safe.
+    if (!ctx) getCtx();
+    if (ctx.state === 'suspended') {
+      ctx.resume().then(() => {
+        masterGain.gain.setTargetAtTime(muted ? 0 : 0.8, ctx.currentTime, 0.3);
+      });
+    } else {
+      masterGain.gain.setTargetAtTime(muted ? 0 : 0.8, ctx.currentTime, 0.3);
+    }
     return muted;
   }
 
