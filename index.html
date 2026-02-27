@@ -1266,9 +1266,22 @@ function startGridAnimation(drug, g, card) {
     if (state.playing) {
       const elapsed = (now - state.startTime) / 1000;
       const totalDur = Math.max(getTotalDuration(drug), 5); // min 5s for smooth animation
-      const loopDur = totalDur + 2;
+      const fadeDur = 1.5; // crossfade duration between cycles
+      const loopDur = totalDur + fadeDur;
       const t = elapsed % loopDur;
-      const progress = Math.min(t / totalDur, 1);
+      // Smooth looping: ease into beginning and out of end
+      let progress;
+      if (t < fadeDur) {
+        // Fade in from seed: ease from 0
+        progress = easeInOut(t / fadeDur) * (fadeDur / totalDur);
+      } else if (t > totalDur) {
+        // Fade out at end: ease the last bit toward 1 then wrap
+        const fadeOut = (t - totalDur) / fadeDur;
+        progress = 1 - (1 - easeInOut(1 - fadeOut)) * 0.02; // hold near 1, then smooth restart
+      } else {
+        progress = t / totalDur;
+      }
+      progress = Math.max(0, Math.min(progress, 1));
       renderFlower(g, drug, progress, false, now);
       updateCardBackground(card, drug, progress, now);
     }
@@ -3687,7 +3700,7 @@ function renderFlower(g, drug, progress, isSolo, now) {
   let bloomScale = 0;
   let stemGrow = 0;
   let colorOpacity = 1;
-  let glowOn = false;
+  let glowAmt = 0;        // smooth 0–1 glow intensity (replaces boolean glowOn)
   let wiltAngle = 0;
   let opacityPulse = 1;
 
@@ -3704,19 +3717,25 @@ function renderFlower(g, drug, progress, isSolo, now) {
   if (t <= d.onset) {
     const p = d.onset > 0 ? easeInOut(t / d.onset) : 1;
     stemGrow = p * 0.35;
-    bloomScale = p * 0.2; // bud grows to 20% (visible, not just a dot)
-    petalSpread = p * 0.05; // very slight opening hint
-    petalCurl = -0.4; // tightly curled inward as a bud
+    bloomScale = p * 0.2;
+    petalSpread = p * 0.05;
+    petalCurl = -0.4;
     colorOpacity = 0.3 + p * 0.35;
   }
   // Phase: Come Up — petals slowly unfurl, gradual bloom
   else if (t <= (acc = d.onset) + d.comeUp) {
     const p = d.comeUp > 0 ? easeInOut((t - acc) / d.comeUp) : 1;
     stemGrow = 0.35 + p * 0.45;
-    bloomScale = 0.2 + p * 0.43; // 0.2 → 0.63, smooth growth
-    petalSpread = 0.05 + p * 0.95; // gradually fan open
-    petalCurl = -0.4 + p * 0.4; // uncurl from tight bud to flat
+    bloomScale = 0.2 + p * 0.43;
+    petalSpread = 0.05 + p * 0.95;
+    petalCurl = -0.4 + p * 0.4;
     colorOpacity = 0.65 + p * 0.35;
+    // Glow fades in during late come-up
+    glowAmt = Math.max(0, (p - 0.6) / 0.4) * 0.5; // 0 → 0.5 over last 40%
+    if (drug.effects.visuals > 4) {
+      const pulseRamp = Math.max(0, (p - 0.7) / 0.3); // gentle ramp-in
+      opacityPulse = 1 - pulseRamp * 0.12 * (1 - Math.sin(time * (drug.effects.visuals * 0.7))) * 0.5;
+    }
   }
   // Phase: Peak — full bloom, vibrant, alive
   else if (t <= (acc = d.onset + d.comeUp) + d.peak) {
@@ -3724,8 +3743,8 @@ function renderFlower(g, drug, progress, isSolo, now) {
     stemGrow = 0.8 + easeInOut(p) * 0.2;
     bloomScale = 0.63 + easeInOut(p) * 0.37;
     petalSpread = 1;
-    petalCurl = 0.15 * Math.sin(p * Math.PI); // gentle outward bow at mid-peak
-    glowOn = true;
+    petalCurl = 0.15 * Math.sin(p * Math.PI);
+    glowAmt = 0.5 + 0.5 * Math.sin(p * Math.PI); // ramps 0.5→1→0.5 smoothly
     if (drug.effects.visuals > 4) {
       opacityPulse = 0.88 + Math.sin(time * (drug.effects.visuals * 0.7)) * 0.12;
     }
@@ -3735,11 +3754,17 @@ function renderFlower(g, drug, progress, isSolo, now) {
     const p = d.offset > 0 ? easeInOut((t - acc) / d.offset) : 1;
     stemGrow = 1 - p * 0.2;
     bloomScale = 1 - p * 0.3;
-    petalSpread = 1 - p * 0.3; // petals start closing slightly
-    petalDroop = p * 15; // petals droop gently
-    petalCurl = -p * 0.3; // slight curl inward
-    colorOpacity = 1 - p * 0.35; // ends at 0.65
+    petalSpread = 1 - p * 0.3;
+    petalDroop = p * 15;
+    petalCurl = -p * 0.3;
+    colorOpacity = 1 - p * 0.35;
     wiltAngle = p * 8;
+    // Glow fades out during early offset
+    glowAmt = 0.5 * (1 - easeInOut(Math.min(p / 0.4, 1))); // 0.5 → 0 over first 40%
+    if (drug.effects.visuals > 4) {
+      const pulseRamp = 1 - easeInOut(Math.min(p / 0.3, 1)); // fade out pulse
+      opacityPulse = 1 - pulseRamp * 0.12 * (1 - Math.sin(time * (drug.effects.visuals * 0.7))) * 0.5;
+    }
   }
   // Phase: After Effects — flower fades to fully transparent
   else {
@@ -3750,9 +3775,10 @@ function renderFlower(g, drug, progress, isSolo, now) {
     petalSpread = 0.7 - p * 0.4;
     petalDroop = 15 + p * 25;
     petalCurl = -0.3 - p * 0.4;
-    colorOpacity = 0.65 * (1 - p); // fade to fully transparent
+    colorOpacity = 0.65 * (1 - p);
     wiltAngle = 8 + p * 12;
   }
+  const glowOn = glowAmt > 0.05; // for filter toggle, but driven by smooth ramp
 
   // Scale for grid vs solo
   const sc = isSolo ? 1.0 : 0.6;
@@ -3830,7 +3856,12 @@ function renderFlower(g, drug, progress, isSolo, now) {
   const wiltDrop = wiltAngle * 0.5; // translate down proportional to wilt
   const wiltTilt = wiltAngle * 0.3; // gentle tilt, not full rotation
   headG.setAttribute('transform', `translate(${headX}, ${wiltDrop}) rotate(${wiltTilt + sway * 0.5})`);
-  if (glowOn) headG.setAttribute('filter', `url(#glow-${drug.id})`);
+  if (glowOn) {
+    // Smoothly scale the glow filter's blur based on glowAmt
+    const glowFilter = g.ownerSVGElement && g.ownerSVGElement.querySelector(`#glow-${drug.id} feGaussianBlur`);
+    if (glowFilter) glowFilter.setAttribute('stdDeviation', (glowAmt * 4).toFixed(1));
+    headG.setAttribute('filter', `url(#glow-${drug.id})`);
+  }
 
   // Petals — each petal gets its own wind-driven sway, scale breathing, and bend
   if (petalR > 1) {
