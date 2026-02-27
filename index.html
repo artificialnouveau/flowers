@@ -3742,7 +3742,7 @@ function renderFlower(g, drug, progress, isSolo, now) {
     stem.setAttribute('stroke-width', 2.2 * sc);
     stem.setAttribute('stroke-linecap', 'round');
     stem.setAttribute('fill', 'none');
-    stem.setAttribute('opacity', Math.max(0.1, colorOpacity));
+    stem.setAttribute('opacity', colorOpacity);
     g.appendChild(stem);
 
     // Leaves
@@ -3754,7 +3754,7 @@ function renderFlower(g, drug, progress, isSolo, now) {
         leaf.setAttribute('rx', rx);
         leaf.setAttribute('ry', ry);
         leaf.setAttribute('fill', '#3a7a32');
-        leaf.setAttribute('opacity', Math.max(0.05, colorOpacity * 0.7));
+        leaf.setAttribute('opacity', colorOpacity * 0.7);
         leaf.setAttribute('transform', `rotate(${rot}, ${cx}, ${cy})`);
         g.appendChild(leaf);
       };
@@ -3827,7 +3827,7 @@ function renderFlower(g, drug, progress, isSolo, now) {
       const petal = document.createElementNS(svgNS, 'path');
       petal.setAttribute('d', petalPath(f.petalShape, petalR));
       petal.setAttribute('fill', `url(#grad-${drug.id})`);
-      petal.setAttribute('opacity', Math.max(0.05, colorOpacity * opacityPulse));
+      petal.setAttribute('opacity', colorOpacity * opacityPulse);
       petalG.appendChild(petal);
       headG.appendChild(petalG);
     }
@@ -3854,7 +3854,7 @@ function renderFlower(g, drug, progress, isSolo, now) {
     outer.setAttribute('cy', 0);
     outer.setAttribute('r', centerR * egoExpand);
     outer.setAttribute('fill', f.secondaryColor);
-    outer.setAttribute('opacity', Math.max(0.05, colorOpacity * 0.85));
+    outer.setAttribute('opacity', colorOpacity * 0.85);
     headG.appendChild(outer);
 
     const inner = document.createElementNS(svgNS, 'circle');
@@ -3862,7 +3862,7 @@ function renderFlower(g, drug, progress, isSolo, now) {
     inner.setAttribute('cy', 0);
     inner.setAttribute('r', centerR * 0.45 * egoExpand);
     inner.setAttribute('fill', f.primaryColor);
-    inner.setAttribute('opacity', Math.max(0.05, colorOpacity));
+    inner.setAttribute('opacity', colorOpacity);
     headG.appendChild(inner);
   }
 
