@@ -121,10 +121,13 @@
     z-index: 200;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
+    padding-top: 20px;
     backdrop-filter: blur(8px);
     opacity: 0;
     transition: opacity 0.6s ease;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
   .overlay.open { display: flex; }
   .overlay.visible { opacity: 1; }
@@ -420,9 +423,11 @@
     z-index: 200;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
+    padding-top: 20px;
     backdrop-filter: blur(8px);
-    overflow: auto;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
     opacity: 0;
     transition: opacity 0.6s ease;
   }
@@ -700,7 +705,7 @@
     <button id="soloRestart">&#8634;</button>
     <button id="soloPlayPause">&#9654;</button>
     <button class="sound-btn" id="soloSoundBtn" title="Toggle sound">&#128264;</button>
-    <button id="closeOverlay" class="return-btn">&larr; Return</button>
+    <button id="closeOverlay" class="return-btn">&larr;</button>
   </div>
 </div>
 
@@ -736,7 +741,7 @@
     <button id="compareRestart">&#8634;</button>
     <button id="comparePlayPause">&#9654;</button>
     <button class="sound-btn" id="compareSoundBtn" title="Toggle sound">&#128264;</button>
-    <button id="closeCompare" class="return-btn">&larr; Return</button>
+    <button id="closeCompare" class="return-btn">&larr;</button>
   </div>
 </div>
 
@@ -2332,10 +2337,10 @@ const AudioEngine = (() => {
         character: 'resonant' // sitar-like resonance
       },
       'Stimulants': {
-        baseFreq: 330, waveform: 'sawtooth', waveform2: 'square',
-        filterQ: 3, filterType: 'highpass', detuneRange: 5, reverbMix: 0.15,
-        delayTime: 0.08, // short percussive delay
-        harmonicRatios: [1, 2, 0.5, 4], // bright overtones
+        baseFreq: 330, waveform: 'triangle', waveform2: 'sine',
+        filterQ: 2, filterType: 'lowpass', detuneRange: 5, reverbMix: 0.15,
+        delayTime: 0.06, // tight percussive delay
+        harmonicRatios: [1, 2, 0.5, 3], // clean bright overtones
         character: 'percussive'
       },
       'Depressants': {
@@ -2590,7 +2595,7 @@ const AudioEngine = (() => {
     if (nodes[prefix]) stop(prefix);
     buildGraph(drug, prefix);
     active = true;
-    if (!muted) masterGain.gain.setTargetAtTime(0.35, ctx.currentTime, 0.3);
+    if (!muted) masterGain.gain.setTargetAtTime(0.8, ctx.currentTime, 0.3);
   }
 
   function startDual(drug1, drug2) {
@@ -2599,7 +2604,7 @@ const AudioEngine = (() => {
     buildGraph(drug1, 'comp0');
     buildGraph(drug2, 'comp1');
     active = true;
-    if (!muted) masterGain.gain.setTargetAtTime(0.3, ctx.currentTime, 0.3);
+    if (!muted) masterGain.gain.setTargetAtTime(0.7, ctx.currentTime, 0.3);
   }
 
   function stop(prefix) {
@@ -2621,7 +2626,7 @@ const AudioEngine = (() => {
   function toggleMute() {
     muted = !muted;
     if (!ctx) return muted;
-    masterGain.gain.setTargetAtTime(muted ? 0 : 0.35, ctx.currentTime, 0.3);
+    masterGain.gain.setTargetAtTime(muted ? 0 : 0.8, ctx.currentTime, 0.3);
     return muted;
   }
 
@@ -2676,68 +2681,71 @@ const AudioEngine = (() => {
     // Onset
     if (elapsed <= d.onset) {
       const p = d.onset > 0 ? elapsed / d.onset : 1;
-      volume = p * 0.15;
-      filterFreq = 150 + p * 100;
-      subVol = p * 0.1;
-      heartVol = p * 0.03;
+      volume = p * 0.3;
+      filterFreq = 150 + p * 150;
+      subVol = p * 0.2;
+      heartVol = p * 0.06;
     }
     // Come up
     else if (elapsed <= (acc = d.onset) + d.comeUp) {
       const p = (elapsed - acc) / d.comeUp;
-      volume = 0.15 + p * 0.35;
-      filterFreq = 250 + p * 600;
-      harmonyVol = p * 0.15;
-      subVol = 0.1 + p * 0.1;
+      volume = 0.3 + p * 0.5;
+      filterFreq = 300 + p * 800;
+      harmonyVol = p * 0.25;
+      subVol = 0.2 + p * 0.15;
       detuneAmt = p * tuning.detuneRange * 0.5;
-      lfoDepth = p * 3;
-      heartVol = 0.03 + p * 0.04;
-      binauralVol = p * 0.04;
-      tinnitusVol = ego > 0.3 ? p * ego * 0.02 : 0;
+      lfoDepth = p * 4;
+      heartVol = 0.06 + p * 0.06;
+      binauralVol = p * 0.08;
+      tinnitusVol = ego > 0.3 ? p * ego * 0.04 : 0;
     }
     // Peak
     else if (elapsed <= (acc = d.onset + d.comeUp) + d.peak) {
       const p = (elapsed - acc) / d.peak;
-      volume = 0.5 + Math.sin(p * Math.PI) * 0.15 * intensity;
-      filterFreq = 800 + visuals * 1200 + Math.sin(p * Math.PI * 3) * 200;
-      harmonyVol = 0.15 + visuals * 0.12;
-      subVol = 0.2;
-      shimmerVol = visuals * 0.1 * (0.5 + Math.sin(p * Math.PI) * 0.5);
-      extraVol = intensity > 0.5 ? 0.06 : 0;
+      volume = 0.8 + Math.sin(p * Math.PI) * 0.2 * intensity;
+      filterFreq = 1000 + visuals * 1500 + Math.sin(p * Math.PI * 3) * 300;
+      harmonyVol = 0.25 + visuals * 0.18;
+      subVol = 0.35;
+      shimmerVol = visuals * 0.18 * (0.5 + Math.sin(p * Math.PI) * 0.5);
+      extraVol = intensity > 0.5 ? 0.12 : 0;
       detuneAmt = tuning.detuneRange * (0.5 + ego * 0.5);
       lfoSpeed = 0.5 + bodyLoad * 0.8;
-      lfoDepth = 5 + bodyLoad * 8;
+      lfoDepth = 6 + bodyLoad * 10;
       delayFeedback = tuning.reverbMix * (0.4 + ego * 0.3);
-      heartVol = 0.07;
-      binauralVol = 0.06 + ego * 0.04;
-      tinnitusVol = ego * 0.04 + (cat === 'Dissociatives' ? 0.03 : 0);
+      heartVol = 0.12;
+      binauralVol = 0.1 + ego * 0.06;
+      tinnitusVol = ego * 0.06 + (cat === 'Dissociatives' ? 0.05 : 0);
     }
     // Offset
     else if (elapsed <= (acc = d.onset + d.comeUp + d.peak) + d.offset) {
       const p = (elapsed - acc) / d.offset;
-      volume = 0.5 * (1 - p * 0.5);
-      filterFreq = 800 * (1 - p * 0.6) + 150;
-      harmonyVol = 0.15 * (1 - p);
-      subVol = 0.2 * (1 - p * 0.5);
+      volume = 0.8 * (1 - p * 0.5);
+      filterFreq = 1000 * (1 - p * 0.6) + 200;
+      harmonyVol = 0.25 * (1 - p);
+      subVol = 0.35 * (1 - p * 0.5);
       detuneAmt = tuning.detuneRange * 0.3 * (1 - p);
-      lfoDepth = 3 * (1 - p);
-      heartVol = 0.07 * (1 - p * 0.5);
-      binauralVol = 0.04 * (1 - p);
-      tinnitusVol = ego * 0.02 * (1 - p);
+      lfoDepth = 4 * (1 - p);
+      heartVol = 0.12 * (1 - p * 0.5);
+      binauralVol = 0.08 * (1 - p);
+      tinnitusVol = ego * 0.04 * (1 - p);
     }
     // After effects
     else {
       acc = d.onset + d.comeUp + d.peak + d.offset;
       const p = d.afterEffects > 0 ? Math.min((elapsed - acc) / d.afterEffects, 1) : 1;
-      volume = 0.25 * (1 - p);
-      filterFreq = 200 + 100 * (1 - p);
-      subVol = 0.1 * (1 - p);
-      heartVol = 0.03 * (1 - p);
+      volume = 0.4 * (1 - p);
+      filterFreq = 250 + 150 * (1 - p);
+      subVol = 0.15 * (1 - p);
+      heartVol = 0.06 * (1 - p);
     }
 
     // --- Class-specific timbral adjustments ---
     if (cat === 'Stimulants') {
       heartRate = 1.6 + intensity * 0.8; // fast heartbeat
-      n.filter.Q.setTargetAtTime(3 + intensity * 5, t, 0.2);
+      // Percussive: fast rhythmic LFO pulse for staccato feel
+      lfoSpeed = 3 + intensity * 5;
+      lfoDepth = Math.max(lfoDepth, 8 + intensity * 12);
+      n.filter.Q.setTargetAtTime(2 + intensity * 2, t, 0.2);
     } else if (cat === 'Depressants' || cat === 'Opioids') {
       heartRate = 0.7 + (1 - intensity) * 0.3; // slow heartbeat
       filterFreq = Math.min(filterFreq, 600); // always muffled
@@ -2766,7 +2774,7 @@ const AudioEngine = (() => {
     n.filter.frequency.setTargetAtTime(Math.max(80, filterFreq), t, ramp);
 
     // Oscillator gains
-    const gains = [0.2, harmonyVol, subVol, shimmerVol, extraVol];
+    const gains = [0.4, harmonyVol, subVol, shimmerVol, extraVol];
     for (let i = 0; i < n.oscGains.length; i++) {
       n.oscGains[i].gain.setTargetAtTime(gains[i] || 0, t, ramp);
     }
@@ -3689,19 +3697,19 @@ function renderFlower(g, drug, progress, isSolo, now) {
     petalSpread = 1 - p * 0.3; // petals start closing slightly
     petalDroop = p * 15; // petals droop gently
     petalCurl = -p * 0.3; // slight curl inward
-    colorOpacity = 1 - p * 0.35;
+    colorOpacity = 1 - p * 0.35; // ends at 0.65
     wiltAngle = p * 8;
   }
-  // Phase: After Effects — full wilt, flower fading
+  // Phase: After Effects — flower fades to fully transparent
   else {
     acc = d.onset + d.comeUp + d.peak + d.offset;
     const p = d.afterEffects > 0 ? easeInOut(Math.min((t - acc) / d.afterEffects, 1)) : 1;
     stemGrow = 0.8 - p * 0.35;
     bloomScale = 0.7 - p * 0.35;
-    petalSpread = 0.7 - p * 0.4; // closing
-    petalDroop = 15 + p * 25; // increasing droop
-    petalCurl = -0.3 - p * 0.4; // curling in
-    colorOpacity = 0.65 - p * 0.45;
+    petalSpread = 0.7 - p * 0.4;
+    petalDroop = 15 + p * 25;
+    petalCurl = -0.3 - p * 0.4;
+    colorOpacity = 0.65 * (1 - p); // fade to fully transparent
     wiltAngle = 8 + p * 12;
   }
 
