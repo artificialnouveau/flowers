@@ -655,12 +655,12 @@
 <div class="intro">
   <p>Each flower represents a drug's experience profile. The animation plays through onset, come-up, peak, offset, and after-effects in real-time compression (1 hour = 1 second). Click any flower to watch its full timeline.</p>
   <div class="legend">
-    <span><b>Petals</b> = cognitive complexity (how many distinct thought patterns, altered perceptions, and mental effects — more petals = richer, more layered headspace)</span>
+    <span><b>Petals</b> = cognitive complexity (how many distinct thought patterns, altered perceptions, and mental effects. More petals = richer, more layered headspace)</span>
     <span><b>Shape</b> = drug class (rounded: depressants/entactogens, pointed: stimulants, wavy: psychedelics, wispy: dissociatives/deliriants)</span>
     <span><b>Color</b> = drug class (warm reds/yellows: stimulants, cool blues: depressants, purples/greens: psychedelics, grays: dissociatives, dark: deliriants)</span>
     <span><b>Size</b> = intensity</span>
     <span><b>Sway</b> = body load</span>
-    <span><b>Center</b> = ego dissolution (the center disc is larger and pulses more during peak for substances that dissolve the sense of self — a big, breathing center means a stronger loss of identity)</span>
+    <span><b>Center</b> = ego dissolution (the center disc is larger and pulses more during peak for substances that dissolve the sense of self. A big, breathing center means a stronger loss of identity)</span>
     <span><b>Stem</b> = total duration</span>
     <span><b>Glow</b> = peak phase</span>
     <span><b>Background</b> = hallucination intensity (brighter = stronger visuals)</span>
@@ -700,12 +700,12 @@
 </div>
 
 <footer>
-  Data sourced from <a href="https://psychonautwiki.org/" target="_blank" rel="noopener">PsychonautWiki</a> — thank you for maintaining an open, evidence-based resource.
+  Data sourced from <a href="https://psychonautwiki.org/" target="_blank" rel="noopener">PsychonautWiki</a>. Thank you for maintaining an open, evidence-based resource.
   <br>Duration and classification data retrieved via the <a href="https://api.psychonautwiki.org/" target="_blank" rel="noopener">PsychonautWiki API</a>.
   <div class="disclaimer">
     This visualization is for educational and harm reduction purposes only. It does not constitute medical advice.
     Subjective effect ratings are approximations based on commonly reported experiences and should not be taken as definitive.
-    Drug interactions shown are based on documented pharmacological interactions from harm reduction literature — individual responses vary significantly.
+    Drug interactions shown are based on documented pharmacological interactions from harm reduction literature. Individual responses vary significantly.
     Always consult qualified healthcare professionals and evidence-based resources before making decisions about substance use.
     Many of these substances are controlled or illegal in various jurisdictions.
   </div>
@@ -1255,8 +1255,8 @@ function startGridAnimation(drug, g, card) {
   function tick(now) {
     if (state.playing) {
       const elapsed = (now - state.startTime) / 1000;
-      const totalDur = getTotalDuration(drug);
-      const loopDur = totalDur + 2; // 2s pause between loops
+      const totalDur = Math.max(getTotalDuration(drug), 5); // min 5s for smooth animation
+      const loopDur = totalDur + 2;
       const t = elapsed % loopDur;
       const progress = Math.min(t / totalDur, 1);
       renderFlower(g, drug, progress, false, now);
@@ -1288,8 +1288,7 @@ function setupOverlay() {
     if (!soloState) return;
     // Resume from scrub position
     const progress = document.getElementById('timeline').value / 1000;
-    const totalDur = getTotalDuration(soloState.drug);
-    soloState.startTime = performance.now() - (progress * totalDur * 1000);
+    soloState.startTime = performance.now() - (progress * Math.max(getTotalDuration(soloState.drug), 5) * 1000);
     soloState.scrubbing = false;
   });
 
@@ -1343,8 +1342,8 @@ function openSolo(drug) {
     `<span><b>Ego dissolution:</b> ${e.egoDissolve}/10</span>` +
     `<span><b>Total duration:</b> ${formatTime(getTotalDuration(drug))}</span>` +
     `<span><b>Peak:</b> ${formatTime(dur.peak)}</span>` +
-    `<br><span class="av-desc"><b>Background visuals:</b> The fractal spirals, mandala geometry, and color shifts represent hallucination intensity — they grow from subtle color washes during onset to full kaleidoscopic patterns at peak, then fade during the comedown.</span>` +
-    `<span class="av-desc"><b>Sound:</b> The generative audio mirrors the trip arc — a low drone builds during onset, harmonics and shimmer emerge at peak reflecting the drug's character (warm tones for psychedelics, sharp tones for stimulants, deep tones for depressants), then fades to silence. Toggle with the speaker button.</span>`;
+    `<br><span class="av-desc"><b>Background visuals:</b> The fractal spirals, mandala geometry, and color shifts represent hallucination intensity. They grow from subtle color washes during onset to full kaleidoscopic patterns at peak, then fade during the comedown.</span>` +
+    `<span class="av-desc"><b>Sound:</b> The generative audio mirrors the trip arc. A low drone builds during onset, harmonics and shimmer emerge at peak reflecting the drug's character (warm tones for psychedelics, sharp tones for stimulants, deep tones for depressants), then fades to silence. Toggle with the speaker button.</span>`;
 
   const container = document.getElementById('soloFlowerContainer');
   container.innerHTML = '';
@@ -1365,6 +1364,7 @@ function openSolo(drug) {
   updateSoundBtn('soloSoundBtn');
 
   const totalDur = getTotalDuration(drug);
+  const minAnimDur = 5; // minimum 5 seconds of animation for smooth playback
   document.getElementById('totalLabel').textContent = formatTime(totalDur);
   document.getElementById('timeline').value = 0;
 
@@ -1374,9 +1374,10 @@ function openSolo(drug) {
     soloState.drug = applyDose(soloState.baseDrug, getDoseMultiplier());
     const activeDrug = soloState.drug;
     const curTotalDur = getTotalDuration(activeDrug);
+    const displayDur = Math.max(curTotalDur, minAnimDur);
     if (soloState.playing && !soloState.scrubbing) {
       const elapsed = (now - soloState.startTime) / 1000;
-      const progress = Math.min(elapsed / curTotalDur, 1);
+      const progress = Math.min(elapsed / displayDur, 1);
       renderFlower(g, activeDrug, progress, true, now);
       document.getElementById('timeline').value = progress * 1000;
       updatePhaseLabel(activeDrug, progress);
@@ -1408,14 +1409,17 @@ function closeSolo() {
   setHash('');
 }
 
+function getSoloDisplayDur() {
+  return Math.max(getTotalDuration(soloState.drug), 5);
+}
+
 function toggleSoloPlay() {
   if (!soloState) return;
   soloState.playing = !soloState.playing;
   document.getElementById('soloPlayPause').innerHTML = soloState.playing ? '&#9646;&#9646;' : '&#9654;';
   if (soloState.playing) {
     const progress = document.getElementById('timeline').value / 1000;
-    const totalDur = getTotalDuration(soloState.drug);
-    soloState.startTime = performance.now() - (progress * totalDur * 1000);
+    soloState.startTime = performance.now() - (progress * getSoloDisplayDur() * 1000);
   }
 }
 
@@ -1480,7 +1484,7 @@ const INTERACTIONS = [
 function getInteraction(drug1, drug2) {
   const c1 = drug1.category, c2 = drug2.category;
   // Same drug
-  if (drug1.id === drug2.id) return { type: 'same', label: 'Same Drug', color: '#64748b', desc: 'Same substance — effects simply overlap.' };
+  if (drug1.id === drug2.id) return { type: 'same', label: 'Same Drug', color: '#64748b', desc: 'Same substance. Effects simply overlap.' };
   // Same subcategory
   if (drug1.subcategory === drug2.subcategory && drug1.subcategory !== drug1.category)
     return { type: 'similar', label: 'Similar Compounds', color: '#94a3b8', desc: `Both are ${drug1.subcategory.toLowerCase()}. Effects are largely additive with similar mechanism of action.` };
@@ -1600,8 +1604,8 @@ function openCompare() {
   tag.style.border = `1px solid ${interaction.color}50`;
   document.getElementById('interactionDesc').innerHTML = interaction.desc +
     `<br><span style="color:#64748b;font-size:0.68rem;line-height:1.5;display:block;margin-top:6px;">` +
-    `<b style="color:#94a3b8">Background:</b> The combined visuals blend both drugs' colors into fractal patterns — synergistic combos produce more intense, layered geometry while antagonistic combos dampen the effects. ` +
-    `<b style="color:#94a3b8">Sound:</b> Both drugs play simultaneously — listen for how their frequencies interact and overlap. The center hybrid flower shows the predicted combined experience.</span>`;
+    `<b style="color:#94a3b8">Background:</b> The combined visuals blend both drugs' colors into fractal patterns. Synergistic combos produce more intense, layered geometry while antagonistic combos dampen the effects. ` +
+    `<b style="color:#94a3b8">Sound:</b> Both drugs play simultaneously. Listen for how their frequencies interact and overlap. The center hybrid flower shows the predicted combined experience.</span>`;
 
   // Build side-by-side flowers
   const container = document.getElementById('compareFlowers');
@@ -2624,192 +2628,283 @@ function updateSoloBackground(drug, progress, now) {
   if (intensity < 0.005) return;
 
   const cx = W * 0.5, cy = H * 0.45;
-  const sides = drug.flower.petalCount;
+  const sides = Math.max(3, drug.flower.petalCount);
   const ego = drug.effects.egoDissolve / 10;
+  const bodyLoad = drug.effects.bodyLoad / 10;
+  // Breathing effect — whole scene pulses
+  const breathe = 1 + Math.sin(time * 1.5) * 0.06 * intensity + Math.sin(time * 2.3) * 0.03 * intensity;
 
-  // ── Layer 1: Breathing color wash with slow hue rotation ──
-  for (let w = 0; w < 3; w++) {
-    const wPhase = w * 2.09 + time * 0.15;
-    const wx = W * (0.5 + Math.sin(wPhase) * 0.3);
-    const wy = H * (0.5 + Math.cos(wPhase * 0.7) * 0.25);
-    const wc = lerpColor(drugRgb, drugAccent, (w / 3 + Math.sin(time * 0.2 + w) * 0.5) * 0.5 + 0.25);
-    const wr = W * (0.4 + intensity * 0.3);
+  // ── Layer 1: Deep color field with drifting ──
+  // Multiple overlapping gradients that drift organically (simulates "color shifting")
+  ctx.globalCompositeOperation = 'source-over';
+  for (let w = 0; w < 4; w++) {
+    const phase = w * 1.57 + time * (0.12 + w * 0.03);
+    const drift = Math.sin(time * 0.3 + w * 2.1) * 0.15;
+    const wx = W * (0.5 + Math.sin(phase) * 0.35 + drift);
+    const wy = H * (0.5 + Math.cos(phase * 0.7) * 0.3);
+    const t2 = (w / 4 + Math.sin(time * 0.18 + w) * 0.3) % 1;
+    const wc = lerpColor(drugRgb, drugAccent, t2);
+    // Complementary color for richer palette
+    const wc2 = [(255 - wc[0]) * 0.3 + wc[0] * 0.7, (255 - wc[1]) * 0.3 + wc[1] * 0.7, (255 - wc[2]) * 0.3 + wc[2] * 0.7];
+    const wr = W * (0.35 + intensity * 0.35) * breathe;
     const wg = ctx.createRadialGradient(wx, wy, 0, wx, wy, wr);
-    wg.addColorStop(0, `rgba(${wc[0]},${wc[1]},${wc[2]},${intensity * 0.3})`);
-    wg.addColorStop(1, `rgba(${wc[0]},${wc[1]},${wc[2]},0)`);
+    wg.addColorStop(0, `rgba(${Math.round(wc2[0])},${Math.round(wc2[1])},${Math.round(wc2[2])},${intensity * 0.25})`);
+    wg.addColorStop(0.5, `rgba(${wc[0]},${wc[1]},${wc[2]},${intensity * 0.12})`);
+    wg.addColorStop(1, `rgba(${dark[0]},${dark[1]},${dark[2]},0)`);
     ctx.fillStyle = wg;
     ctx.fillRect(0, 0, W, H);
   }
 
-  // ── Layer 2: Fractal spiral arms ──
+  // ── Layer 2: Alex Grey-style energy lattice / nervous system web ──
+  // Glowing interconnected web of lines that pulse with energy, like neural pathways
   if (intensity > 0.1) {
     ctx.globalCompositeOperation = 'screen';
-    const arms = Math.max(3, sides);
-    const spiralTurns = 3 + visuals * 4;
-    const maxR = Math.min(W, H) * (0.4 + intensity * 0.3);
-    const spiralAlpha = intensity * visuals * 0.5;
-    const goldenAngle = 2.399963; // golden angle in radians
+    const gridSize = 30 + (1 - intensity) * 40; // denser at higher intensity
+    const cols = Math.ceil(W / gridSize) + 1;
+    const rows = Math.ceil(H / gridSize) + 1;
+    const webAlpha = intensity * visuals * 0.35;
 
-    for (let arm = 0; arm < arms; arm++) {
-      const armOffset = (Math.PI * 2 / arms) * arm + time * 0.15;
-      ctx.beginPath();
-      for (let s = 0; s < 120; s++) {
-        const t2 = s / 120;
-        const r = t2 * maxR;
-        const spiralAngle = armOffset + t2 * spiralTurns * Math.PI * 2
-          + Math.sin(time * 0.8 + t2 * 4) * 0.3 * intensity;
-        const x = cx + Math.cos(spiralAngle) * r;
-        const y = cy + Math.sin(spiralAngle) * r;
-        if (s === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-      }
-      const armColor = lerpColor(drugRgb, drugAccent, (arm / arms + Math.sin(time * 0.3)) * 0.5 + 0.25);
-      ctx.strokeStyle = `rgba(${armColor[0]},${armColor[1]},${armColor[2]},${spiralAlpha * 0.25})`;
-      ctx.lineWidth = 1.5 + intensity * 3;
-      ctx.stroke();
-    }
+    for (let row = 0; row < rows; row++) {
+      for (let col = 0; col < cols; col++) {
+        // Each node drifts organically
+        const nodePhase = col * 0.7 + row * 1.1 + time * 0.4;
+        const driftX = Math.sin(nodePhase) * gridSize * 0.3 * intensity;
+        const driftY = Math.cos(nodePhase * 0.8 + 0.5) * gridSize * 0.3 * intensity;
+        const nx = col * gridSize + driftX;
+        const ny = row * gridSize + driftY;
 
-    // Fibonacci dot spiral overlay
-    if (intensity > 0.3) {
-      const dotCount = Math.floor(40 + visuals * 80);
-      for (let d2 = 0; d2 < dotCount; d2++) {
-        const t2 = d2 / dotCount;
-        const r = Math.sqrt(t2) * maxR * 0.9;
-        const angle = d2 * goldenAngle + time * 0.2;
-        const wobble = Math.sin(time * 2 + d2 * 0.1) * intensity * 5;
-        const dx = cx + Math.cos(angle) * (r + wobble);
-        const dy = cy + Math.sin(angle) * (r + wobble);
-        const dotR = (1 + intensity * 3) * (1 - t2 * 0.5);
-        const dotAlpha = intensity * 0.35 * (1 - t2 * 0.7);
-        const dc = lerpColor(drugRgb, drugAccent, (t2 + Math.sin(time * 0.5 + d2 * 0.05)) * 0.5 + 0.25);
-        ctx.beginPath();
-        ctx.arc(dx, dy, dotR, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(${dc[0]},${dc[1]},${dc[2]},${dotAlpha})`;
-        ctx.fill();
+        // Pulse brightness based on distance from center and time
+        const dx = nx - cx, dy = ny - cy;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        const maxDist = Math.sqrt(cx * cx + cy * cy);
+        const wavePulse = Math.sin(dist * 0.02 - time * 2.5) * 0.5 + 0.5;
+        const nodeAlpha = webAlpha * wavePulse * (1 - dist / maxDist * 0.5);
+
+        if (nodeAlpha < 0.01) continue;
+
+        const t2 = (dist / maxDist + Math.sin(time * 0.3 + dist * 0.01)) * 0.5;
+        const nc = lerpColor(drugRgb, drugAccent, t2);
+
+        // Draw connections to right and down neighbors
+        if (col < cols - 1) {
+          const nnx = (col + 1) * gridSize + Math.sin(nodePhase + 0.7) * gridSize * 0.3 * intensity;
+          const nny = row * gridSize + Math.cos((nodePhase + 0.7) * 0.8 + 0.5) * gridSize * 0.3 * intensity;
+          ctx.beginPath();
+          ctx.moveTo(nx, ny);
+          // Curved connection for organic feel
+          const midX = (nx + nnx) / 2 + Math.sin(time * 1.8 + nodePhase) * 5 * intensity;
+          const midY = (ny + nny) / 2 + Math.cos(time * 1.5 + nodePhase) * 5 * intensity;
+          ctx.quadraticCurveTo(midX, midY, nnx, nny);
+          ctx.strokeStyle = `rgba(${nc[0]},${nc[1]},${nc[2]},${nodeAlpha * 0.6})`;
+          ctx.lineWidth = 0.5 + intensity * 1.5 * wavePulse;
+          ctx.stroke();
+        }
+        if (row < rows - 1) {
+          const nnx = col * gridSize + Math.sin(nodePhase + 1.1 * cols) * gridSize * 0.3 * intensity;
+          const nny = (row + 1) * gridSize + Math.cos((nodePhase + 1.1 * cols) * 0.8 + 0.5) * gridSize * 0.3 * intensity;
+          ctx.beginPath();
+          ctx.moveTo(nx, ny);
+          const midX = (nx + nnx) / 2 + Math.cos(time * 1.6 + nodePhase) * 5 * intensity;
+          const midY = (ny + nny) / 2 + Math.sin(time * 1.3 + nodePhase) * 5 * intensity;
+          ctx.quadraticCurveTo(midX, midY, nnx, nny);
+          ctx.strokeStyle = `rgba(${nc[0]},${nc[1]},${nc[2]},${nodeAlpha * 0.6})`;
+          ctx.lineWidth = 0.5 + intensity * 1.5 * wavePulse;
+          ctx.stroke();
+        }
+
+        // Glowing node dot
+        if (wavePulse > 0.6) {
+          ctx.beginPath();
+          ctx.arc(nx, ny, 1 + intensity * 2 * wavePulse, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(${nc[0]},${nc[1]},${nc[2]},${nodeAlpha * 0.8})`;
+          ctx.fill();
+        }
       }
     }
   }
 
-  // ── Layer 3: Mandala — nested rotating polygons with mirrored symmetry ──
+  // ── Layer 3: Recursive symmetrical geometry (sacred geometry mandala) ──
   if (intensity > 0.2) {
     ctx.globalCompositeOperation = 'screen';
-    const mandalaLayers = 6 + Math.floor(visuals * 8);
-    const mandalaAlpha = (intensity - 0.2) * visuals * 0.8;
+    const symmetry = sides;
+    const geoLayers = 5 + Math.floor(visuals * 8);
+    const geoAlpha = (intensity - 0.2) * visuals * 0.6;
+    const maxGeoR = Math.min(W, H) * (0.35 + intensity * 0.2) * breathe;
 
-    for (let ml = 0; ml < mandalaLayers; ml++) {
-      const mlR = 20 + ml * (20 + intensity * 35);
-      const mlSides = sides + (ml % 3);
-      const mlRot = time * (0.1 + ml * 0.05) * (ml % 2 === 0 ? 1 : -1) + ml * 0.5;
-      const mlAlpha = mandalaAlpha * (1 - ml / mandalaLayers) * 0.2;
-      const mlColor = lerpColor(drugRgb, drugAccent,
-        (ml / mandalaLayers + Math.sin(time * 0.4 + ml * 0.7)) * 0.5 + 0.25);
+    // Draw mirrored geometry in each symmetry segment
+    ctx.save();
+    ctx.translate(cx, cy);
 
-      // Outer polygon
-      ctx.beginPath();
-      for (let i = 0; i <= mlSides; i++) {
-        const a = (Math.PI * 2 / mlSides) * i + mlRot;
-        const wobble = Math.sin(time * 1.8 + i * 1.3 + ml * 0.5) * intensity * 6;
-        const x = cx + Math.cos(a) * (mlR + wobble);
-        const y = cy + Math.sin(a) * (mlR + wobble);
-        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-      }
-      ctx.closePath();
-      ctx.strokeStyle = `rgba(${mlColor[0]},${mlColor[1]},${mlColor[2]},${mlAlpha})`;
-      ctx.lineWidth = 1 + intensity * 2;
-      ctx.stroke();
+    for (let layer = 0; layer < geoLayers; layer++) {
+      const layerT = layer / geoLayers;
+      const layerR = maxGeoR * (0.1 + layerT * 0.9);
+      const rot = time * (0.08 + layer * 0.02) * (layer % 2 === 0 ? 1 : -1);
+      const lAlpha = geoAlpha * (1 - layerT * 0.5) * 0.25;
+      const lc = lerpColor(drugRgb, drugAccent,
+        (layerT + Math.sin(time * 0.35 + layer * 0.8)) * 0.5 + 0.25);
 
-      // Inner connecting star pattern
-      if (ml > 1 && intensity > 0.4) {
+      // Symmetrical pattern — draw once, rotate for each segment
+      for (let seg = 0; seg < symmetry; seg++) {
+        const segAngle = (Math.PI * 2 / symmetry) * seg + rot;
+        const wobble = Math.sin(time * 1.2 + seg * 1.5 + layer * 0.7) * intensity * 8;
+
+        // Curved petal-like shape in each segment
+        const r1 = layerR * 0.6 + wobble;
+        const r2 = layerR + wobble * 0.5;
+        const spread = Math.PI / symmetry * (0.6 + Math.sin(time * 0.8 + layer) * 0.2 * intensity);
+
         ctx.beginPath();
-        for (let i = 0; i < mlSides; i++) {
-          const a1 = (Math.PI * 2 / mlSides) * i + mlRot;
-          const a2 = (Math.PI * 2 / mlSides) * ((i + 2) % mlSides) + mlRot;
-          const x1 = cx + Math.cos(a1) * mlR;
-          const y1 = cy + Math.sin(a1) * mlR;
-          const x2 = cx + Math.cos(a2) * mlR;
-          const y2 = cy + Math.sin(a2) * mlR;
-          ctx.moveTo(x1, y1);
-          ctx.lineTo(x2, y2);
-        }
-        ctx.strokeStyle = `rgba(${mlColor[0]},${mlColor[1]},${mlColor[2]},${mlAlpha * 0.5})`;
-        ctx.lineWidth = 0.7;
+        ctx.moveTo(0, 0);
+        const cp1x = Math.cos(segAngle - spread * 0.3) * r1;
+        const cp1y = Math.sin(segAngle - spread * 0.3) * r1;
+        const cp2x = Math.cos(segAngle + spread * 0.3) * r1;
+        const cp2y = Math.sin(segAngle + spread * 0.3) * r1;
+        const tipX = Math.cos(segAngle) * r2;
+        const tipY = Math.sin(segAngle) * r2;
+        ctx.bezierCurveTo(cp1x, cp1y, cp1x * 1.2, cp1y * 1.2, tipX, tipY);
+        ctx.bezierCurveTo(cp2x * 1.2, cp2y * 1.2, cp2x, cp2y, 0, 0);
+        ctx.strokeStyle = `rgba(${lc[0]},${lc[1]},${lc[2]},${lAlpha})`;
+        ctx.lineWidth = 0.5 + intensity * 1.5;
         ctx.stroke();
-      }
-    }
 
-    // Radial rays from center
-    if (intensity > 0.4) {
-      const rayCount = sides * 2;
-      const rayAlpha = (intensity - 0.4) * visuals * 0.2;
-      const outerR = 20 + mandalaLayers * (20 + intensity * 35);
-      for (let r2 = 0; r2 < rayCount; r2++) {
-        const a = (Math.PI * 2 / rayCount) * r2 + time * 0.1;
-        const rayWobble = Math.sin(time * 1.5 + r2 * 0.8) * 10 * intensity;
+        // Inner detail lines (Alex Grey anatomical style)
+        if (intensity > 0.5 && layer % 2 === 0) {
+          const detailLines = 3;
+          for (let dl = 1; dl <= detailLines; dl++) {
+            const dt = dl / (detailLines + 1);
+            const dr = layerR * dt * 0.8;
+            ctx.beginPath();
+            ctx.arc(0, 0, dr + wobble * dt, segAngle - spread, segAngle + spread);
+            ctx.strokeStyle = `rgba(${lc[0]},${lc[1]},${lc[2]},${lAlpha * 0.4 * dt})`;
+            ctx.lineWidth = 0.4;
+            ctx.stroke();
+          }
+        }
+      }
+
+      // Connecting ring at this layer's radius
+      if (layer > 0) {
         ctx.beginPath();
-        ctx.moveTo(cx, cy);
-        ctx.lineTo(cx + Math.cos(a) * (outerR + rayWobble), cy + Math.sin(a) * (outerR + rayWobble));
-        const rc = lerpColor(drugAccent, drugRgb, (r2 / rayCount + Math.sin(time * 0.6)) * 0.5 + 0.25);
-        ctx.strokeStyle = `rgba(${rc[0]},${rc[1]},${rc[2]},${rayAlpha})`;
+        // Wobbly circle
+        for (let a = 0; a <= 64; a++) {
+          const angle = (Math.PI * 2 / 64) * a + rot * 0.5;
+          const rWobble = layerR + Math.sin(angle * symmetry + time * 1.5) * intensity * 5;
+          const x = Math.cos(angle) * rWobble;
+          const y = Math.sin(angle) * rWobble;
+          if (a === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+        ctx.closePath();
+        ctx.strokeStyle = `rgba(${lc[0]},${lc[1]},${lc[2]},${lAlpha * 0.4})`;
         ctx.lineWidth = 0.5 + intensity;
         ctx.stroke();
       }
     }
+    ctx.restore();
   }
 
-  // ── Layer 4: Kaleidoscope mirror segments ──
-  if (intensity > 0.5 && visuals > 0.5) {
-    ctx.globalCompositeOperation = 'lighter';
-    const segments = sides * 2;
-    const kalAlpha = (intensity - 0.5) * visuals * 0.15;
-    const kalR = Math.min(W, H) * 0.35;
-
-    for (let seg = 0; seg < segments; seg++) {
-      const a1 = (Math.PI * 2 / segments) * seg + time * 0.08;
-      const a2 = a1 + Math.PI * 2 / segments;
-      const mid = (a1 + a2) / 2;
-
-      // Pulsing triangle segments
-      const pulseR = kalR * (0.8 + Math.sin(time * 2 + seg * 0.5) * 0.2 * intensity);
-      ctx.beginPath();
-      ctx.moveTo(cx, cy);
-      ctx.lineTo(cx + Math.cos(a1) * pulseR, cy + Math.sin(a1) * pulseR);
-      ctx.lineTo(cx + Math.cos(mid) * pulseR * 1.1, cy + Math.sin(mid) * pulseR * 1.1);
-      ctx.lineTo(cx + Math.cos(a2) * pulseR, cy + Math.sin(a2) * pulseR);
-      ctx.closePath();
-      const kc = lerpColor(drugRgb, drugAccent,
-        (seg / segments + Math.sin(time * 0.7 + seg)) * 0.5 + 0.25);
-      ctx.fillStyle = `rgba(${kc[0]},${kc[1]},${kc[2]},${kalAlpha * (0.5 + Math.sin(time * 1.5 + seg * 1.1) * 0.5)})`;
-      ctx.fill();
-    }
-  }
-
-  // ── Layer 5: Concentric breathing ripples ──
-  if (intensity > 0.15) {
+  // ── Layer 4: Flowing/drifting texture (simulates melting/flowing) ──
+  if (intensity > 0.3 && visuals > 0.3) {
     ctx.globalCompositeOperation = 'screen';
-    const numRings = Math.floor(5 + visuals * 10);
-    const rippleAlpha = (intensity - 0.15) * 0.6;
-    for (let i = 0; i < numRings; i++) {
-      const ringPhase = time * 0.9 + i * 0.4;
-      const ringProgress = (ringPhase % 3.5) / 3.5;
-      const ringR = ringProgress * Math.max(W, H) * 0.55;
-      const ringFade = (1 - ringProgress) * (1 - ringProgress);
-      const rc = lerpColor(drugRgb, drugAccent, (i / numRings + Math.sin(time * 0.3 + i)) * 0.5 + 0.25);
+    const flowCount = 8 + Math.floor(visuals * 12);
+    const flowAlpha = (intensity - 0.3) * visuals * 0.35;
+
+    for (let f = 0; f < flowCount; f++) {
+      const fPhase = f * 2.39996 + time * 0.25; // golden angle spacing
+      const startX = W * (0.1 + 0.8 * ((Math.sin(fPhase * 0.3) + 1) / 2));
+      const startY = H * (0.1 + 0.8 * ((Math.cos(fPhase * 0.4) + 1) / 2));
+
       ctx.beginPath();
-      ctx.arc(cx, cy, ringR, 0, Math.PI * 2);
-      ctx.strokeStyle = `rgba(${rc[0]},${rc[1]},${rc[2]},${rippleAlpha * ringFade * 0.4})`;
-      ctx.lineWidth = 2 + intensity * 5;
+      ctx.moveTo(startX, startY);
+      let px = startX, py = startY;
+      // Flowing bezier trail
+      for (let seg = 0; seg < 4; seg++) {
+        const segPhase = fPhase + seg * 1.1 + time * 0.5;
+        const cpx = px + Math.sin(segPhase) * 60 * intensity;
+        const cpy = py + Math.cos(segPhase * 0.7) * 60 * intensity;
+        px = px + Math.cos(segPhase * 0.5) * 40;
+        py = py + Math.sin(segPhase * 0.8) * 40 + 10; // slight downward flow
+        ctx.quadraticCurveTo(cpx, cpy, px, py);
+      }
+      const fc = lerpColor(drugRgb, drugAccent, (f / flowCount + Math.sin(time * 0.2 + f)) * 0.5 + 0.25);
+      ctx.strokeStyle = `rgba(${fc[0]},${fc[1]},${fc[2]},${flowAlpha * (0.3 + Math.sin(time + f) * 0.2)})`;
+      ctx.lineWidth = 1 + intensity * 3;
+      ctx.lineCap = 'round';
       ctx.stroke();
     }
   }
 
-  // ── Layer 6: Floating orbs ──
+  // ── Layer 5: Tracer echoes — concentric afterimage rings expanding ──
+  if (intensity > 0.15) {
+    ctx.globalCompositeOperation = 'screen';
+    const tracerCount = Math.floor(4 + visuals * 10);
+    const tracerAlpha = (intensity - 0.15) * 0.5;
+
+    for (let tr = 0; tr < tracerCount; tr++) {
+      const trPhase = time * 0.7 + tr * 0.35;
+      const trProgress = (trPhase % 4) / 4;
+      const trR = trProgress * Math.max(W, H) * 0.5 * breathe;
+      const trFade = Math.pow(1 - trProgress, 1.5);
+      const trSides = sides + Math.floor(tr % 3);
+
+      // Morphing polygon ring (not perfect circle — drifting)
+      ctx.beginPath();
+      for (let i = 0; i <= 48; i++) {
+        const a = (Math.PI * 2 / 48) * i;
+        const morph = Math.sin(a * trSides + time * 1.2 + tr) * trR * 0.08 * intensity;
+        const x = cx + Math.cos(a) * (trR + morph);
+        const y = cy + Math.sin(a) * (trR + morph);
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.closePath();
+      const tc = lerpColor(drugRgb, drugAccent, (tr / tracerCount + Math.sin(time * 0.3)) * 0.5 + 0.25);
+      ctx.strokeStyle = `rgba(${tc[0]},${tc[1]},${tc[2]},${tracerAlpha * trFade * 0.4})`;
+      ctx.lineWidth = 1.5 + intensity * 3 * trFade;
+      ctx.stroke();
+    }
+  }
+
+  // ── Layer 6: Symmetrical texture repetition (mirrored recursive patterns at peak) ──
+  if (intensity > 0.6 && visuals > 0.5) {
+    ctx.globalCompositeOperation = 'screen';
+    const mirrorAlpha = (intensity - 0.6) * visuals * 0.2;
+    const mirrorSym = sides;
+    const mirrorR = Math.min(W, H) * 0.4;
+
+    ctx.save();
+    ctx.translate(cx, cy);
+    for (let m = 0; m < mirrorSym * 2; m++) {
+      const angle = (Math.PI / mirrorSym) * m;
+      ctx.save();
+      ctx.rotate(angle);
+      if (m % 2 === 1) ctx.scale(1, -1); // mirror alternate segments
+
+      // Draw organic flowing curve in this segment
+      ctx.beginPath();
+      const curvePhase = time * 0.6 + m * 0.5;
+      for (let p = 0; p < 30; p++) {
+        const pt = p / 30;
+        const pr = pt * mirrorR;
+        const px2 = pr;
+        const py2 = Math.sin(pt * 6 + curvePhase) * pr * 0.15 * intensity;
+        if (p === 0) ctx.moveTo(px2, py2); else ctx.lineTo(px2, py2);
+      }
+      const mc = lerpColor(drugRgb, drugAccent, (m / (mirrorSym * 2) + Math.sin(time * 0.4)) * 0.5 + 0.25);
+      ctx.strokeStyle = `rgba(${mc[0]},${mc[1]},${mc[2]},${mirrorAlpha})`;
+      ctx.lineWidth = 0.8 + intensity;
+      ctx.stroke();
+      ctx.restore();
+    }
+    ctx.restore();
+  }
+
+  // ── Layer 7: Floating orbs with tracers ──
   ctx.globalCompositeOperation = 'screen';
   for (const orb of hallucinationOrbs) {
     const ox = ((orb.x + orb.driftX * time * orb.speed * 0.1) % 1.4) - 0.2;
     const oy = ((orb.y + orb.driftY * time * orb.speed * 0.1) % 1.4) - 0.2;
     const px = ox * W, py = oy * H;
     const sizePulse = 1 + Math.sin(time * orb.speed * 2 + orb.phase) * 0.4 * intensity;
-    const r = orb.baseR * intensity * sizePulse;
+    const r = orb.baseR * intensity * sizePulse * breathe;
     if (r < 1) continue;
     const alpha = intensity * (0.3 + Math.sin(time * orb.speed + orb.phase) * 0.15);
     const g2 = ctx.createRadialGradient(px, py, 0, px, py, r);
@@ -2818,21 +2913,23 @@ function updateSoloBackground(drug, progress, now) {
     g2.addColorStop(1, `rgba(${orb.color[0]},${orb.color[1]},${orb.color[2]},0)`);
     ctx.fillStyle = g2;
     ctx.fillRect(px - r, py - r, r * 2, r * 2);
+    // Mirror symmetry echo
     if (orb.mirror && intensity > 0.25) {
       const mx = W - px, my = H - py;
-      const g3 = ctx.createRadialGradient(mx, my, 0, mx, my, r * 0.8);
-      g3.addColorStop(0, `rgba(${orb.color[0]},${orb.color[1]},${orb.color[2]},${alpha * 0.6})`);
+      const g3 = ctx.createRadialGradient(mx, my, 0, mx, my, r * 0.7);
+      g3.addColorStop(0, `rgba(${orb.color[0]},${orb.color[1]},${orb.color[2]},${alpha * 0.5})`);
       g3.addColorStop(1, `rgba(${orb.color[0]},${orb.color[1]},${orb.color[2]},0)`);
       ctx.fillStyle = g3;
       ctx.fillRect(mx - r, my - r, r * 2, r * 2);
     }
   }
 
-  // ── Layer 7: Vignette ──
+  // ── Layer 8: Breathing vignette ──
   ctx.globalCompositeOperation = 'source-over';
-  const vignetteGrd = ctx.createRadialGradient(cx, cy, W * 0.12, cx, cy, W * 0.75);
+  const vigR = W * (0.15 + intensity * 0.1) * breathe;
+  const vignetteGrd = ctx.createRadialGradient(cx, cy, vigR, cx, cy, W * 0.75);
   vignetteGrd.addColorStop(0, `rgba(${dark[0]},${dark[1]},${dark[2]},0)`);
-  vignetteGrd.addColorStop(1, `rgba(${dark[0]},${dark[1]},${dark[2]},${0.4 + (1 - intensity) * 0.45})`);
+  vignetteGrd.addColorStop(1, `rgba(${dark[0]},${dark[1]},${dark[2]},${0.35 + (1 - intensity) * 0.5})`);
   ctx.fillStyle = vignetteGrd;
   ctx.fillRect(0, 0, W, H);
 }
