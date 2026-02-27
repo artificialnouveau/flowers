@@ -243,6 +243,177 @@
   }
 
   .solo-details span b { color: #94a3b8; font-weight: 500; }
+
+  /* Compare mode */
+  .compare-bar {
+    display: none;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 32px;
+    background: #1a1a2eee;
+    border-bottom: 1px solid #334155;
+    backdrop-filter: blur(8px);
+    font-size: 0.85rem;
+  }
+  .compare-bar.active { display: flex; flex-wrap: wrap; }
+
+  .compare-bar .pick-label { color: #94a3b8; }
+
+  .compare-bar .picked {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #334155;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+  }
+
+  .compare-bar .picked .remove-pick {
+    cursor: pointer;
+    color: #94a3b8;
+    font-weight: bold;
+    font-size: 1rem;
+    line-height: 1;
+    background: none;
+    border: none;
+    padding: 0 0 0 4px;
+  }
+
+  .compare-bar .picked .remove-pick:hover { color: #f87171; }
+
+  .compare-bar .go-btn {
+    background: #4f46e5;
+    border-color: #6366f1;
+    padding: 6px 16px;
+    font-size: 0.8rem;
+  }
+
+  .compare-bar .cancel-btn {
+    background: transparent;
+    border-color: #475569;
+    padding: 6px 16px;
+    font-size: 0.8rem;
+  }
+
+  .card.selectable { cursor: crosshair; }
+  .card.selected {
+    border-color: #6366f1 !important;
+    box-shadow: 0 0 16px rgba(99,102,241,0.4) !important;
+  }
+
+  /* Compare overlay */
+  .compare-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: #0f0f1af2;
+    z-index: 200;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(8px);
+  }
+  .compare-overlay.open { display: flex; }
+
+  #compareCanvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  .compare-overlay > *:not(#compareCanvas) {
+    position: relative;
+    z-index: 1;
+  }
+
+  .compare-flowers {
+    display: flex;
+    gap: 24px;
+    align-items: flex-end;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .compare-flowers .compare-side {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .compare-flowers svg {
+    width: min(38vw, 300px);
+    height: min(38vw, 300px);
+  }
+
+  .compare-side .compare-label {
+    margin-top: 6px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    text-align: center;
+  }
+
+  .compare-side .compare-phase {
+    font-size: 0.75rem;
+    color: #a78bfa;
+    margin-top: 2px;
+    min-height: 18px;
+  }
+
+  .compare-info {
+    text-align: center;
+    margin-top: 14px;
+  }
+
+  .compare-info h2 {
+    font-size: 1.3rem;
+    font-weight: 300;
+    letter-spacing: 1px;
+  }
+
+  .compare-info .interaction-tag {
+    font-size: 0.8rem;
+    margin-top: 6px;
+    padding: 4px 14px;
+    border-radius: 20px;
+    display: inline-block;
+  }
+
+  .compare-info .interaction-desc {
+    font-size: 0.72rem;
+    color: #94a3b8;
+    margin-top: 6px;
+    max-width: 500px;
+  }
+
+  .compare-timeline {
+    margin-top: 14px;
+    width: min(80vw, 550px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .compare-timeline input[type=range] {
+    width: 100%;
+    accent-color: #6366f1;
+    cursor: pointer;
+  }
+
+  .compare-controls {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+  }
+
+  .compare-controls button {
+    font-size: 1.1rem;
+    padding: 8px 18px;
+  }
 </style>
 </head>
 <body>
@@ -255,8 +426,16 @@
     </select>
     <button id="playAllBtn">&#9654; Play All</button>
     <button id="restartAllBtn">&#8634; Restart</button>
+    <button id="compareBtn">Compare Two</button>
   </div>
 </header>
+
+<div class="compare-bar" id="compareBar">
+  <span class="pick-label">Select two flowers to compare:</span>
+  <span id="picks"></span>
+  <button class="go-btn" id="compareGo" style="display:none">Compare</button>
+  <button class="cancel-btn" id="compareCancel">Cancel</button>
+</div>
 
 <div class="intro">
   <p>Each flower represents a drug's experience profile. The animation plays through onset, come-up, peak, offset, and after-effects in real-time compression (1 hour = 1 second). Click any flower to watch its full timeline.</p>
@@ -295,6 +474,28 @@
   <div class="solo-controls">
     <button id="soloRestart">&#8634;</button>
     <button id="soloPlayPause">&#9654;</button>
+  </div>
+</div>
+
+<div class="compare-overlay" id="compareOverlay">
+  <canvas id="compareCanvas"></canvas>
+  <button class="close-btn" id="closeCompare" style="position:absolute;top:18px;right:24px;font-size:2rem;background:none;border:none;color:#94a3b8;cursor:pointer;z-index:1;">&times;</button>
+  <div class="compare-flowers" id="compareFlowers"></div>
+  <div class="compare-info">
+    <h2 id="compareTitle"></h2>
+    <div class="interaction-tag" id="interactionTag"></div>
+    <div class="interaction-desc" id="interactionDesc"></div>
+  </div>
+  <div class="compare-timeline">
+    <input type="range" id="compareTimeline" min="0" max="1000" value="0">
+    <div class="timeline-labels">
+      <span id="compareTimeLabel">0h 00m</span>
+      <span id="compareTotalLabel">0h 00m</span>
+    </div>
+  </div>
+  <div class="compare-controls">
+    <button id="compareRestart">&#8634;</button>
+    <button id="comparePlayPause">&#9654;</button>
   </div>
 </div>
 
@@ -435,6 +636,7 @@ function init() {
   renderGrid('All');
   setupOverlay();
   setupHeaderButtons();
+  setupCompareMode();
 }
 
 // ─── Category filter ───
@@ -500,7 +702,10 @@ function renderGrid(category) {
     card.appendChild(svg);
     card.appendChild(label);
     card.appendChild(subLabel);
-    card.addEventListener('click', () => openSolo(drug));
+    card.addEventListener('click', () => {
+      if (compareMode) { addComparePick(drug, card); }
+      else { openSolo(drug); }
+    });
     grid.appendChild(card);
 
     startGridAnimation(drug, g, card);
@@ -655,6 +860,513 @@ function restartSolo() {
   soloState.playing = true;
   soloState.scrubbing = false;
   document.getElementById('soloPlayPause').innerHTML = '&#9646;&#9646;';
+}
+
+// ─── Compare mode ───
+let compareMode = false;
+let comparePicks = [];  // up to 2 drug objects
+let compareState = null; // { drugs, gs, startTime, playing, scrubbing, raf }
+
+// Interaction database — based on documented pharmacological interactions
+const INTERACTIONS = [
+  { cats: ['Psychedelics', 'Entactogens'], type: 'synergy', label: 'Synergistic',
+    color: '#f59e0b', desc: 'Commonly reported to intensify visuals, euphoria, and emotional depth. Classic combinations include "candyflipping" (LSD+MDMA) and "hippieflipping" (psilocybin+MDMA).' },
+  { cats: ['Psychedelics', 'Cannabinoids'], type: 'synergy', label: 'Potentiating',
+    color: '#22c55e', desc: 'Cannabis is commonly reported to significantly intensify psychedelic visuals and cognitive effects, sometimes unpredictably.' },
+  { cats: ['Psychedelics', 'Dissociatives'], type: 'synergy', label: 'Synergistic',
+    color: '#a855f7', desc: 'Reported to produce deeply immersive, dissociated psychedelic states. The combination can be overwhelming and unpredictable.' },
+  { cats: ['Depressants', 'Psychedelics'], type: 'antagonism', label: 'Dampening',
+    color: '#3b82f6', desc: 'Benzodiazepines and other depressants are commonly used as "trip killers" to reduce psychedelic intensity. They dampen visuals and anxiety.' },
+  { cats: ['Stimulants', 'Depressants'], type: 'antagonism', label: 'Opposing',
+    color: '#ef4444', desc: 'These categories have opposing mechanisms. Stimulants mask depressant sedation while depressants mask stimulant anxiety, but underlying physiological strain remains.' },
+  { cats: ['Depressants', 'Depressants'], type: 'synergy', label: 'Dangerous Synergy',
+    color: '#dc2626', desc: 'Combining depressants (opioids + benzodiazepines) is widely documented to synergistically increase respiratory depression risk. This is one of the most dangerous drug combinations.' },
+  { cats: ['Stimulants', 'Stimulants'], type: 'synergy', label: 'Compounding',
+    color: '#f97316', desc: 'Combining stimulants compounds cardiovascular strain. Increased heart rate, blood pressure, and risk of cardiac events are well-documented.' },
+  { cats: ['Entactogens', 'Stimulants'], type: 'synergy', label: 'Intensifying',
+    color: '#fb923c', desc: 'Stimulants can intensify entactogen effects but also increase neurotoxicity risk, cardiovascular strain, and hyperthermia.' },
+  { cats: ['Dissociatives', 'Depressants'], type: 'synergy', label: 'Dangerous Synergy',
+    color: '#dc2626', desc: 'Both categories depress the CNS. Combination increases risk of respiratory depression, loss of consciousness, and vomiting while sedated.' },
+  { cats: ['Cannabinoids', 'Dissociatives'], type: 'synergy', label: 'Potentiating',
+    color: '#64748b', desc: 'Cannabis is reported to deepen dissociative states and can increase confusion and disorientation.' },
+  { cats: ['Deliriants', 'Psychedelics'], type: 'synergy', label: 'Unpredictable',
+    color: '#78716c', desc: 'Deliriants combined with psychedelics produce highly unpredictable, often dysphoric experiences. Realistic hallucinations mixed with psychedelic distortion.' },
+  { cats: ['Deliriants', 'Depressants'], type: 'synergy', label: 'Dangerous Synergy',
+    color: '#dc2626', desc: 'Both cause sedation and cognitive impairment. Combination increases risk of cardiac complications (deliriants are anticholinergic) and respiratory depression.' },
+];
+
+function getInteraction(drug1, drug2) {
+  const c1 = drug1.category, c2 = drug2.category;
+  // Same drug
+  if (drug1.id === drug2.id) return { type: 'same', label: 'Same Drug', color: '#64748b', desc: 'Same substance — effects simply overlap.' };
+  // Same subcategory
+  if (drug1.subcategory === drug2.subcategory && drug1.subcategory !== drug1.category)
+    return { type: 'similar', label: 'Similar Compounds', color: '#94a3b8', desc: `Both are ${drug1.subcategory.toLowerCase()}. Effects are largely additive with similar mechanism of action.` };
+  // Check interaction table (bidirectional)
+  for (const rule of INTERACTIONS) {
+    if ((rule.cats[0] === c1 && rule.cats[1] === c2) || (rule.cats[0] === c2 && rule.cats[1] === c1)) {
+      return rule;
+    }
+  }
+  return { type: 'unknown', label: 'Mixed Effects', color: '#64748b', desc: 'Interaction profile varies. Combined effects are not well characterized for this specific pairing.' };
+}
+
+// Compute combined effects based on interaction type
+function getCombinedEffects(drug1, drug2, interaction) {
+  const e1 = drug1.effects, e2 = drug2.effects;
+  let synergyMult = 1.0;  // how much the combo amplifies
+  let dampenMult = 1.0;   // how much it dampens
+
+  if (interaction.type === 'synergy') { synergyMult = 1.35; }
+  else if (interaction.type === 'antagonism') { dampenMult = 0.6; }
+
+  return {
+    visuals: Math.min(10, Math.max(e1.visuals, e2.visuals) * synergyMult * dampenMult + Math.min(e1.visuals, e2.visuals) * 0.3 * synergyMult),
+    intensity: Math.min(10, (e1.intensity + e2.intensity) * 0.6 * synergyMult * dampenMult),
+    euphoria: Math.min(10, Math.max(e1.euphoria, e2.euphoria) * synergyMult * dampenMult),
+    bodyLoad: Math.min(10, (e1.bodyLoad + e2.bodyLoad) * 0.6 * synergyMult),
+    egoDissolve: Math.min(10, Math.max(e1.egoDissolve, e2.egoDissolve) * synergyMult * dampenMult),
+  };
+}
+
+function enterCompareMode() {
+  compareMode = true;
+  comparePicks = [];
+  document.getElementById('compareBar').classList.add('active');
+  document.getElementById('picks').innerHTML = '';
+  document.getElementById('compareGo').style.display = 'none';
+  // Make cards selectable
+  document.querySelectorAll('.card').forEach(c => c.classList.add('selectable'));
+}
+
+function exitCompareMode() {
+  compareMode = false;
+  comparePicks = [];
+  document.getElementById('compareBar').classList.remove('active');
+  document.querySelectorAll('.card').forEach(c => {
+    c.classList.remove('selectable', 'selected');
+  });
+}
+
+function addComparePick(drug, card) {
+  if (comparePicks.length >= 2) return;
+  if (comparePicks.find(p => p.drug.id === drug.id)) return;
+  comparePicks.push({ drug, card });
+  card.classList.add('selected');
+
+  // Update picks display
+  const picksEl = document.getElementById('picks');
+  picksEl.innerHTML = comparePicks.map((p, i) =>
+    `<span class="picked">${p.drug.name}<button class="remove-pick" data-idx="${i}">&times;</button></span>`
+  ).join(' + ');
+
+  picksEl.querySelectorAll('.remove-pick').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const idx = parseInt(btn.dataset.idx);
+      comparePicks[idx].card.classList.remove('selected');
+      comparePicks.splice(idx, 1);
+      // Refresh display
+      addComparePick.__refresh();
+    });
+  });
+
+  document.getElementById('compareGo').style.display = comparePicks.length === 2 ? '' : 'none';
+}
+// Helper to refresh picks display without adding
+addComparePick.__refresh = function() {
+  const picksEl = document.getElementById('picks');
+  picksEl.innerHTML = comparePicks.map((p, i) =>
+    `<span class="picked">${p.drug.name}<button class="remove-pick" data-idx="${i}">&times;</button></span>`
+  ).join(comparePicks.length === 2 ? ' + ' : '');
+  picksEl.querySelectorAll('.remove-pick').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const idx = parseInt(btn.dataset.idx);
+      comparePicks[idx].card.classList.remove('selected');
+      comparePicks.splice(idx, 1);
+      addComparePick.__refresh();
+    });
+  });
+  document.getElementById('compareGo').style.display = comparePicks.length === 2 ? '' : 'none';
+};
+
+function openCompare() {
+  if (comparePicks.length !== 2) return;
+  const drug1 = comparePicks[0].drug;
+  const drug2 = comparePicks[1].drug;
+  exitCompareMode();
+
+  const interaction = getInteraction(drug1, drug2);
+  const combined = getCombinedEffects(drug1, drug2, interaction);
+
+  const overlay = document.getElementById('compareOverlay');
+  overlay.classList.add('open');
+
+  // Canvas
+  const canvas = document.getElementById('compareCanvas');
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  initCompareOrbs(drug1, drug2, interaction);
+
+  // Title + interaction
+  document.getElementById('compareTitle').textContent = `${drug1.name} + ${drug2.name}`;
+  const tag = document.getElementById('interactionTag');
+  tag.textContent = interaction.label;
+  tag.style.background = interaction.color + '30';
+  tag.style.color = interaction.color;
+  tag.style.border = `1px solid ${interaction.color}50`;
+  document.getElementById('interactionDesc').textContent = interaction.desc;
+
+  // Build side-by-side flowers
+  const container = document.getElementById('compareFlowers');
+  container.innerHTML = '';
+  const svgNS = 'http://www.w3.org/2000/svg';
+  const gs = [];
+
+  [drug1, drug2].forEach((drug, idx) => {
+    const side = document.createElement('div');
+    side.className = 'compare-side';
+
+    const svg = document.createElementNS(svgNS, 'svg');
+    svg.setAttribute('viewBox', '-80 -70 160 160');
+    svg.setAttribute('xmlns', svgNS);
+    addDefs(svg, drug);
+    const g = document.createElementNS(svgNS, 'g');
+    svg.appendChild(g);
+    gs.push(g);
+
+    const label = document.createElement('div');
+    label.className = 'compare-label';
+    label.textContent = drug.name;
+
+    const phase = document.createElement('div');
+    phase.className = 'compare-phase';
+    phase.id = `comparePhase${idx}`;
+
+    side.appendChild(svg);
+    side.appendChild(label);
+    side.appendChild(phase);
+    container.appendChild(side);
+  });
+
+  const maxDur = Math.max(getTotalDuration(drug1), getTotalDuration(drug2));
+  document.getElementById('compareTotalLabel').textContent = formatTime(maxDur);
+  document.getElementById('compareTimeline').value = 0;
+
+  compareState = {
+    drugs: [drug1, drug2],
+    gs,
+    interaction,
+    combined,
+    maxDur,
+    startTime: performance.now(),
+    playing: true,
+    scrubbing: false,
+    raf: null,
+  };
+  document.getElementById('comparePlayPause').innerHTML = '&#9646;&#9646;';
+
+  function tick(now) {
+    if (!compareState) return;
+    if (compareState.playing && !compareState.scrubbing) {
+      const elapsed = (now - compareState.startTime) / 1000;
+      const progress = Math.min(elapsed / maxDur, 1);
+      renderCompareFrame(progress, now);
+      document.getElementById('compareTimeline').value = progress * 1000;
+      document.getElementById('compareTimeLabel').textContent = formatTime(progress * maxDur);
+
+      if (progress >= 1) {
+        compareState.playing = false;
+        document.getElementById('comparePlayPause').innerHTML = '&#9654;';
+      }
+    }
+    compareState.raf = requestAnimationFrame(tick);
+  }
+  compareState.raf = requestAnimationFrame(tick);
+}
+
+function renderCompareFrame(progress, now) {
+  if (!compareState) return;
+  const { drugs: [d1, d2], gs: [g1, g2], maxDur, interaction, combined } = compareState;
+
+  // Each drug progresses on its own timeline within the shared max duration
+  const dur1 = getTotalDuration(d1);
+  const dur2 = getTotalDuration(d2);
+  const t = progress * maxDur;
+  const p1 = Math.min(t / dur1, 1);
+  const p2 = Math.min(t / dur2, 1);
+
+  renderFlower(g1, d1, p1, true, now);
+  renderFlower(g2, d2, p2, true, now);
+
+  // Phase labels
+  const phase1 = p1 < 1 ? getPhaseInfo(d1, p1) : { name: 'Finished', phaseProgress: 1 };
+  const phase2 = p2 < 1 ? getPhaseInfo(d2, p2) : { name: 'Finished', phaseProgress: 1 };
+  document.getElementById('comparePhase0').textContent = `${phase1.name} (${Math.round(phase1.phaseProgress * 100)}%)`;
+  document.getElementById('comparePhase1').textContent = `${phase2.name} (${Math.round(phase2.phaseProgress * 100)}%)`;
+
+  // Combined hallucination background
+  updateCompareBackground(d1, d2, p1, p2, interaction, combined, now);
+}
+
+function closeCompare() {
+  document.getElementById('compareOverlay').classList.remove('open');
+  const canvas = document.getElementById('compareCanvas');
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  if (compareState && compareState.raf) cancelAnimationFrame(compareState.raf);
+  compareState = null;
+}
+
+// ─── Compare hallucination canvas ───
+let compareOrbs = [];
+
+function initCompareOrbs(drug1, drug2, interaction) {
+  compareOrbs = [];
+  const v1 = drug1.effects.visuals, v2 = drug2.effects.visuals;
+  const count = 15 + Math.round((v1 + v2) * 2.5);
+  const rgb1 = hexToRgb(drug1.flower.primaryColor);
+  const rgb2 = hexToRgb(drug2.flower.primaryColor);
+  const acc1 = hexToRgb(drug1.flower.secondaryColor);
+  const acc2 = hexToRgb(drug2.flower.secondaryColor);
+
+  for (let i = 0; i < count; i++) {
+    const side = i < count / 2 ? 0 : 1; // which drug this orb belongs to
+    const baseColor = side === 0 ? lerpColor(rgb1, acc1, Math.random()) : lerpColor(rgb2, acc2, Math.random());
+    compareOrbs.push({
+      x: Math.random(),
+      y: Math.random(),
+      baseR: 25 + Math.random() * 100,
+      speed: 0.12 + Math.random() * 0.3,
+      phase: Math.random() * Math.PI * 2,
+      driftX: (Math.random() - 0.5) * 0.35,
+      driftY: (Math.random() - 0.5) * 0.25,
+      color: baseColor,
+      side,
+      mirror: Math.random() > 0.55,
+    });
+  }
+}
+
+function updateCompareBackground(d1, d2, p1, p2, interaction, combined, now) {
+  const canvas = document.getElementById('compareCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const time = now / 1000;
+
+  const i1 = getHallucinationIntensity(d1, p1);
+  const i2 = getHallucinationIntensity(d2, p2);
+
+  // Interaction modifies combined intensity
+  let synergyBoost = 1.0;
+  if (interaction.type === 'synergy') synergyBoost = 1.4;
+  else if (interaction.type === 'antagonism') synergyBoost = 0.55;
+
+  const combinedIntensity = Math.min(1, (i1 + i2) * 0.6 * synergyBoost);
+  const overlapIntensity = Math.min(i1, i2) * synergyBoost; // how much they overlap right now
+
+  const dark = [15, 15, 26];
+  const rgb1 = hexToRgb(d1.flower.primaryColor);
+  const rgb2 = hexToRgb(d2.flower.primaryColor);
+  const acc1 = hexToRgb(d1.flower.secondaryColor);
+  const acc2 = hexToRgb(d2.flower.secondaryColor);
+
+  // Clear
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.fillStyle = `rgb(${dark[0]},${dark[1]},${dark[2]})`;
+  ctx.fillRect(0, 0, W, H);
+
+  if (combinedIntensity < 0.005) return;
+
+  // ── Layer 1: Dual color wash (left=drug1, right=drug2, blending in center) ──
+  const wash1 = lerpColor(rgb1, acc1, 0.5 + Math.sin(time * 0.25) * 0.3);
+  const wash2 = lerpColor(rgb2, acc2, 0.5 + Math.cos(time * 0.3) * 0.3);
+  const w1a = i1 * 0.25;
+  const w2a = i2 * 0.25;
+
+  // Drug 1 wash — biased left
+  const grd1 = ctx.createRadialGradient(
+    W * (0.3 + Math.sin(time * 0.2) * 0.1), H * 0.45, 0,
+    W * 0.35, H * 0.5, W * 0.5
+  );
+  grd1.addColorStop(0, `rgba(${wash1[0]},${wash1[1]},${wash1[2]},${w1a})`);
+  grd1.addColorStop(1, `rgba(${dark[0]},${dark[1]},${dark[2]},0)`);
+  ctx.fillStyle = grd1;
+  ctx.fillRect(0, 0, W, H);
+
+  // Drug 2 wash — biased right
+  const grd2 = ctx.createRadialGradient(
+    W * (0.7 + Math.cos(time * 0.18) * 0.1), H * 0.45, 0,
+    W * 0.65, H * 0.5, W * 0.5
+  );
+  grd2.addColorStop(0, `rgba(${wash2[0]},${wash2[1]},${wash2[2]},${w2a})`);
+  grd2.addColorStop(1, `rgba(${dark[0]},${dark[1]},${dark[2]},0)`);
+  ctx.fillStyle = grd2;
+  ctx.fillRect(0, 0, W, H);
+
+  // ── Overlap zone: blended color in center when both active ──
+  if (overlapIntensity > 0.05) {
+    const blended = lerpColor(wash1, wash2, 0.5 + Math.sin(time * 0.5) * 0.2);
+    const overlapGrd = ctx.createRadialGradient(
+      W * 0.5, H * 0.45, 0, W * 0.5, H * 0.5, W * 0.35
+    );
+    overlapGrd.addColorStop(0, `rgba(${blended[0]},${blended[1]},${blended[2]},${overlapIntensity * 0.3 * synergyBoost})`);
+    overlapGrd.addColorStop(1, `rgba(${blended[0]},${blended[1]},${blended[2]},0)`);
+    ctx.fillStyle = overlapGrd;
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  // ── Layer 2: Floating orbs ──
+  ctx.globalCompositeOperation = 'screen';
+  for (const orb of compareOrbs) {
+    const orbIntensity = orb.side === 0 ? i1 : i2;
+    if (orbIntensity < 0.01) continue;
+
+    const ox = ((orb.x + orb.driftX * time * orb.speed * 0.1) % 1.4) - 0.2;
+    const oy = ((orb.y + orb.driftY * time * orb.speed * 0.1) % 1.4) - 0.2;
+    const px = ox * W;
+    const py = oy * H;
+    const sizePulse = 1 + Math.sin(time * orb.speed * 2 + orb.phase) * 0.3 * orbIntensity;
+    const r = orb.baseR * orbIntensity * sizePulse * (1 + overlapIntensity * 0.3 * synergyBoost);
+
+    if (r < 1) continue;
+
+    const alpha = orbIntensity * (0.12 + Math.sin(time * orb.speed + orb.phase) * 0.06);
+    const g = ctx.createRadialGradient(px, py, 0, px, py, r);
+    g.addColorStop(0, `rgba(${orb.color[0]},${orb.color[1]},${orb.color[2]},${alpha})`);
+    g.addColorStop(0.5, `rgba(${orb.color[0]},${orb.color[1]},${orb.color[2]},${alpha * 0.25})`);
+    g.addColorStop(1, `rgba(${orb.color[0]},${orb.color[1]},${orb.color[2]},0)`);
+    ctx.fillStyle = g;
+    ctx.fillRect(px - r, py - r, r * 2, r * 2);
+
+    if (orb.mirror && combinedIntensity > 0.3) {
+      const mx = W - px, my = H - py;
+      const ma = alpha * (combinedIntensity - 0.3);
+      const mg = ctx.createRadialGradient(mx, my, 0, mx, my, r * 0.6);
+      mg.addColorStop(0, `rgba(${orb.color[0]},${orb.color[1]},${orb.color[2]},${ma})`);
+      mg.addColorStop(1, `rgba(${orb.color[0]},${orb.color[1]},${orb.color[2]},0)`);
+      ctx.fillStyle = mg;
+      ctx.fillRect(mx - r, my - r, r * 2, r * 2);
+    }
+  }
+
+  // ── Layer 3: Interaction-specific effects during overlap ──
+  if (overlapIntensity > 0.2) {
+    const effectStr = (overlapIntensity - 0.2) * synergyBoost;
+
+    if (interaction.type === 'synergy') {
+      // Synergy: pulsing rings that expand from center, more chaotic
+      const numRings = Math.floor(4 + combined.visuals * 3);
+      for (let i = 0; i < numRings; i++) {
+        const rp = (time * 0.7 + i * 0.6) % 3 / 3;
+        const rr = rp * W * 0.55;
+        const rf = (1 - rp) * effectStr;
+        const rc = lerpColor(rgb1, rgb2, (Math.sin(time * 0.4 + i) + 1) * 0.5);
+        ctx.beginPath();
+        ctx.arc(W * 0.5, H * 0.45, rr, 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(${rc[0]},${rc[1]},${rc[2]},${rf * 0.3})`;
+        ctx.lineWidth = 2 + effectStr * 4;
+        ctx.stroke();
+      }
+    }
+
+    if (interaction.type === 'antagonism') {
+      // Antagonism: fragmenting/dissolving effect — dashed arcs that break apart
+      ctx.setLineDash([4 + effectStr * 10, 8 + effectStr * 15]);
+      for (let i = 0; i < 6; i++) {
+        const angle = time * 0.3 + i * Math.PI / 3;
+        const r = 50 + i * 30 * effectStr;
+        ctx.beginPath();
+        ctx.arc(W * 0.5, H * 0.45, r, angle, angle + Math.PI * 0.8);
+        const fc = lerpColor(rgb1, rgb2, 0.5);
+        ctx.strokeStyle = `rgba(${fc[0]},${fc[1]},${fc[2]},${effectStr * 0.15})`;
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+      }
+      ctx.setLineDash([]);
+    }
+
+    // Geometric overlay for high combined visuals
+    if (combinedIntensity > 0.5 && combined.visuals > 4) {
+      const geoAlpha = (combinedIntensity - 0.5) * 0.15;
+      const sides = Math.max(d1.flower.petalCount, d2.flower.petalCount);
+      const layers = 4;
+      for (let l = 0; l < layers; l++) {
+        const lr = 60 + l * (40 + combinedIntensity * 40);
+        const rot = time * 0.25 * (l % 2 === 0 ? 1 : -1);
+        ctx.beginPath();
+        for (let s = 0; s <= sides; s++) {
+          const a = (Math.PI * 2 / sides) * s + rot;
+          const wobble = Math.sin(time * 1.2 + s * 0.9 + l) * combinedIntensity * 10;
+          const x = W * 0.5 + Math.cos(a) * (lr + wobble);
+          const y = H * 0.45 + Math.sin(a) * (lr + wobble);
+          if (s === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+        ctx.closePath();
+        const gc = lerpColor(rgb1, rgb2, (l / layers + Math.sin(time * 0.3)) * 0.5 + 0.25);
+        ctx.strokeStyle = `rgba(${gc[0]},${gc[1]},${gc[2]},${geoAlpha})`;
+        ctx.lineWidth = 1 + combinedIntensity * 1.5;
+        ctx.stroke();
+      }
+    }
+  }
+
+  // ── Layer 5: Vignette ──
+  ctx.globalCompositeOperation = 'source-over';
+  const vigGrd = ctx.createRadialGradient(W * 0.5, H * 0.45, W * 0.18, W * 0.5, H * 0.5, W * 0.72);
+  vigGrd.addColorStop(0, `rgba(${dark[0]},${dark[1]},${dark[2]},0)`);
+  vigGrd.addColorStop(1, `rgba(${dark[0]},${dark[1]},${dark[2]},${0.5 + (1 - combinedIntensity) * 0.4})`);
+  ctx.fillStyle = vigGrd;
+  ctx.fillRect(0, 0, W, H);
+}
+
+// ─── Compare mode event wiring ───
+function setupCompareMode() {
+  document.getElementById('compareBtn').addEventListener('click', () => {
+    if (compareMode) exitCompareMode();
+    else enterCompareMode();
+  });
+  document.getElementById('compareCancel').addEventListener('click', exitCompareMode);
+  document.getElementById('compareGo').addEventListener('click', openCompare);
+  document.getElementById('closeCompare').addEventListener('click', closeCompare);
+
+  document.getElementById('comparePlayPause').addEventListener('click', () => {
+    if (!compareState) return;
+    compareState.playing = !compareState.playing;
+    document.getElementById('comparePlayPause').innerHTML = compareState.playing ? '&#9646;&#9646;' : '&#9654;';
+    if (compareState.playing) {
+      const progress = document.getElementById('compareTimeline').value / 1000;
+      compareState.startTime = performance.now() - (progress * compareState.maxDur * 1000);
+    }
+  });
+
+  document.getElementById('compareRestart').addEventListener('click', () => {
+    if (!compareState) return;
+    compareState.startTime = performance.now();
+    compareState.playing = true;
+    compareState.scrubbing = false;
+    document.getElementById('comparePlayPause').innerHTML = '&#9646;&#9646;';
+  });
+
+  const tl = document.getElementById('compareTimeline');
+  tl.addEventListener('input', () => {
+    if (!compareState) return;
+    compareState.scrubbing = true;
+    const progress = tl.value / 1000;
+    renderCompareFrame(progress, performance.now());
+    document.getElementById('compareTimeLabel').textContent = formatTime(progress * compareState.maxDur);
+  });
+  tl.addEventListener('change', () => {
+    if (!compareState) return;
+    const progress = tl.value / 1000;
+    compareState.startTime = performance.now() - (progress * compareState.maxDur * 1000);
+    compareState.scrubbing = false;
+  });
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && compareState) closeCompare();
+  });
 }
 
 // ─── Duration / phase helpers ───
