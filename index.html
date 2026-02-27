@@ -1348,8 +1348,8 @@ function openSolo(drug) {
     `<span><b>Ego dissolution:</b> ${e.egoDissolve}/10</span>` +
     `<span><b>Total duration:</b> ${formatTime(getTotalDuration(drug))}</span>` +
     `<span><b>Peak:</b> ${formatTime(dur.peak)}</span>` +
-    `<br><span class="av-desc"><b>Background visuals:</b> The fractal spirals, mandala geometry, and color shifts represent hallucination intensity. They grow from subtle color washes during onset to full kaleidoscopic patterns at peak, then fade during the comedown.</span>` +
-    `<span class="av-desc"><b>Sound:</b> The generative audio mirrors the trip arc. A low drone builds during onset, harmonics and shimmer emerge at peak reflecting the drug's character (warm tones for psychedelics, sharp tones for stimulants, deep tones for depressants), then fades to silence. Toggle with the speaker button.</span>`;
+    `<br><span class="av-desc"><b>Background visuals:</b> Each drug class has unique visual signatures: psychedelics show geometric overlays and color cycling, dissociatives create tunnel vision and fragmentation, deliriants flicker dark shadows and static, stimulants sharpen contrast, depressants add warm blur, and entactogens sparkle. The eye motif opens wider at peak. Visual snow appears during come-up, melting streaks during offset.</span>` +
+    `<span class="av-desc"><b>Sound:</b> Class-specific timbres shape each drug (resonant harmonics for psychedelics, hollow metallic for dissociatives, percussive for stimulants, warm bass for depressants, choir-like for entactogens, dissonant for deliriants). A heartbeat speeds up for stimulants, slows for depressants. High-pitched ringing rises with ego dissolution. Binaural beating creates spatial depth at peak. Audio cues mark phase transitions.</span>`;
 
   const container = document.getElementById('soloFlowerContainer');
   container.innerHTML = '';
@@ -1614,8 +1614,8 @@ function openCompare() {
   tag.style.border = `1px solid ${interaction.color}50`;
   document.getElementById('interactionDesc').innerHTML = interaction.desc +
     `<br><span style="color:#64748b;font-size:0.68rem;line-height:1.5;display:block;margin-top:6px;">` +
-    `<b style="color:#94a3b8">Background:</b> The combined visuals blend both drugs' colors into fractal patterns. Synergistic combos produce more intense, layered geometry while antagonistic combos dampen the effects. ` +
-    `<b style="color:#94a3b8">Sound:</b> Both drugs play simultaneously. Listen for how their frequencies interact and overlap. The center hybrid flower shows the predicted combined experience.</span>`;
+    `<b style="color:#94a3b8">Background:</b> The combined visuals blend both drugs' class-specific effects. Synergistic combos intensify geometry, color cycling, and tunnel/sparkle effects; antagonistic combos dampen them. ` +
+    `<b style="color:#94a3b8">Sound:</b> Both drugs' class-specific timbres play simultaneously with independent heartbeats and ringing. Listen for how their frequencies interact. The hybrid flower shows the predicted combined experience.</span>`;
 
   // Build side-by-side flowers
   const container = document.getElementById('compareFlowers');
@@ -2250,6 +2250,26 @@ function addDefs(svg, drug) {
   filter.innerHTML = '<feGaussianBlur stdDeviation="4" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>';
   defs.appendChild(filter);
 
+  // Hue rotation filter for psychedelic color cycling
+  const hueFilter = document.createElementNS(svgNS, 'filter');
+  hueFilter.id = `hueshift-${drug.id}`;
+  hueFilter.setAttribute('x', '-20%');
+  hueFilter.setAttribute('y', '-20%');
+  hueFilter.setAttribute('width', '140%');
+  hueFilter.setAttribute('height', '140%');
+  hueFilter.innerHTML = `<feColorMatrix type="hueRotate" values="0"/>`;
+  defs.appendChild(hueFilter);
+
+  // Warping turbulence filter for distortion
+  const warpFilter = document.createElementNS(svgNS, 'filter');
+  warpFilter.id = `warp-${drug.id}`;
+  warpFilter.setAttribute('x', '-10%');
+  warpFilter.setAttribute('y', '-10%');
+  warpFilter.setAttribute('width', '120%');
+  warpFilter.setAttribute('height', '120%');
+  warpFilter.innerHTML = `<feTurbulence type="turbulence" baseFrequency="0.02" numOctaves="2" seed="1" result="turb"/><feDisplacementMap in="SourceGraphic" in2="turb" scale="0" xChannelSelector="R" yChannelSelector="G"/>`;
+  defs.appendChild(warpFilter);
+
   svg.appendChild(defs);
 }
 
@@ -2278,131 +2298,291 @@ function petalPath(shape, r) {
 const AudioEngine = (() => {
   let ctx = null;
   let masterGain = null;
-  let nodes = {};   // active audio nodes
+  let breatheGain = null; // master volume breathing
+  let nodes = {};
   let active = false;
-  let muted = true; // start muted
+  let muted = true;
+  let lastPhase = {}; // track phase transitions per prefix
 
   function getCtx() {
     if (!ctx) {
       ctx = new (window.AudioContext || window.webkitAudioContext)();
+      // Breathing gain modulates master volume in sync with visual breathe
+      breatheGain = ctx.createGain();
+      breatheGain.gain.value = 1;
+      breatheGain.connect(ctx.destination);
       masterGain = ctx.createGain();
       masterGain.gain.value = 0;
-      masterGain.connect(ctx.destination);
+      masterGain.connect(breatheGain);
     }
     if (ctx.state === 'suspended') ctx.resume();
     return ctx;
   }
 
-  // Drug category → base frequency and character
+  // Drug category → detailed tuning with class-specific timbres
   function getDrugTuning(drug) {
     const cat = drug.category;
+    const sub = drug.subcategory || '';
     const map = {
-      'Psychedelics':   { baseFreq: 220,  waveform: 'sine',     filterQ: 8,  detuneRange: 15, reverbMix: 0.6 },
-      'Stimulants':     { baseFreq: 330,  waveform: 'sawtooth', filterQ: 3,  detuneRange: 5,  reverbMix: 0.2 },
-      'Depressants':    { baseFreq: 110,  waveform: 'sine',     filterQ: 2,  detuneRange: 3,  reverbMix: 0.5 },
-      'Opioids':        { baseFreq: 130,  waveform: 'sine',     filterQ: 1,  detuneRange: 2,  reverbMix: 0.7 },
-      'Dissociatives':  { baseFreq: 185,  waveform: 'triangle', filterQ: 6,  detuneRange: 25, reverbMix: 0.8 },
-      'Entactogens':    { baseFreq: 262,  waveform: 'sine',     filterQ: 4,  detuneRange: 8,  reverbMix: 0.5 },
-      'Cannabinoids':   { baseFreq: 165,  waveform: 'sine',     filterQ: 2,  detuneRange: 4,  reverbMix: 0.4 },
-      'Deliriants':     { baseFreq: 98,   waveform: 'sawtooth', filterQ: 10, detuneRange: 40, reverbMix: 0.7 },
-      'Nootropics':     { baseFreq: 392,  waveform: 'sine',     filterQ: 1,  detuneRange: 2,  reverbMix: 0.1 },
-      'Hallucinogens':  { baseFreq: 196,  waveform: 'triangle', filterQ: 5,  detuneRange: 20, reverbMix: 0.6 },
+      'Psychedelics': {
+        baseFreq: 220, waveform: 'sine', waveform2: 'triangle',
+        filterQ: 8, filterType: 'bandpass', detuneRange: 20, reverbMix: 0.7,
+        delayTime: 0.4, // longer delay for spaciousness
+        harmonicRatios: [1, 1.498, 0.5, 2.01, 3.01], // rich harmonic series
+        character: 'resonant' // sitar-like resonance
+      },
+      'Stimulants': {
+        baseFreq: 330, waveform: 'sawtooth', waveform2: 'square',
+        filterQ: 3, filterType: 'highpass', detuneRange: 5, reverbMix: 0.15,
+        delayTime: 0.08, // short percussive delay
+        harmonicRatios: [1, 2, 0.5, 4], // bright overtones
+        character: 'percussive'
+      },
+      'Depressants': {
+        baseFreq: 110, waveform: 'sine', waveform2: 'sine',
+        filterQ: 1, filterType: 'lowpass', detuneRange: 3, reverbMix: 0.5,
+        delayTime: 0.5,
+        harmonicRatios: [1, 1.5, 0.5, 2], // warm
+        character: 'warm'
+      },
+      'Opioids': {
+        baseFreq: 130, waveform: 'sine', waveform2: 'sine',
+        filterQ: 0.5, filterType: 'lowpass', detuneRange: 2, reverbMix: 0.7,
+        delayTime: 0.6,
+        harmonicRatios: [1, 1.5, 0.5, 0.25], // deep sub emphasis
+        character: 'muffled'
+      },
+      'Dissociatives': {
+        baseFreq: 185, waveform: 'triangle', waveform2: 'sawtooth',
+        filterQ: 8, filterType: 'bandpass', detuneRange: 30, reverbMix: 0.9,
+        delayTime: 0.7, // very long delay = tunnel feeling
+        harmonicRatios: [1, 1.335, 0.667, 2.67], // non-harmonic metallic
+        character: 'hollow'
+      },
+      'Entactogens': {
+        baseFreq: 262, waveform: 'sine', waveform2: 'sine',
+        filterQ: 4, filterType: 'lowpass', detuneRange: 8, reverbMix: 0.5,
+        delayTime: 0.35,
+        harmonicRatios: [1, 1.5, 2, 3], // choir-like overtones
+        character: 'choir'
+      },
+      'Cannabinoids': {
+        baseFreq: 165, waveform: 'sine', waveform2: 'triangle',
+        filterQ: 2, filterType: 'lowpass', detuneRange: 6, reverbMix: 0.4,
+        delayTime: 0.3,
+        harmonicRatios: [1, 1.5, 0.5, 2],
+        character: 'warm'
+      },
+      'Deliriants': {
+        baseFreq: 98, waveform: 'sawtooth', waveform2: 'square',
+        filterQ: 12, filterType: 'bandpass', detuneRange: 50, reverbMix: 0.75,
+        delayTime: 0.45,
+        harmonicRatios: [1, 1.13, 0.87, 2.37, 3.71], // maximally dissonant
+        character: 'dissonant'
+      },
+      'Nootropics': {
+        baseFreq: 392, waveform: 'sine', waveform2: 'sine',
+        filterQ: 1, filterType: 'lowpass', detuneRange: 2, reverbMix: 0.1,
+        delayTime: 0.15,
+        harmonicRatios: [1, 2, 0.5, 3],
+        character: 'clean'
+      },
+      'Hallucinogens': {
+        baseFreq: 196, waveform: 'triangle', waveform2: 'sine',
+        filterQ: 6, filterType: 'bandpass', detuneRange: 25, reverbMix: 0.65,
+        delayTime: 0.4,
+        harmonicRatios: [1, 1.498, 0.5, 2.01],
+        character: 'resonant'
+      },
     };
     return map[cat] || map['Depressants'];
   }
 
-  // Build audio graph for a drug
+  // Build audio graph for a drug with all enhanced features
   function buildGraph(drug, prefix) {
     const ac = getCtx();
     const tuning = getDrugTuning(drug);
     const n = {};
+    const allOscs = []; // track all oscillators for cleanup
 
-    // Main drone oscillator
-    n.osc1 = ac.createOscillator();
-    n.osc1.type = tuning.waveform;
-    n.osc1.frequency.value = tuning.baseFreq;
+    // --- Main drone oscillators (using harmonic ratios) ---
+    n.oscs = [];
+    n.oscGains = [];
+    const ratios = tuning.harmonicRatios;
+    for (let i = 0; i < ratios.length; i++) {
+      const osc = ac.createOscillator();
+      osc.type = i < 2 ? tuning.waveform : (i === 2 ? 'sine' : tuning.waveform2);
+      osc.frequency.value = tuning.baseFreq * ratios[i];
+      const g = ac.createGain();
+      g.gain.value = 0;
+      osc.connect(g);
+      n.oscs.push(osc);
+      n.oscGains.push(g);
+      allOscs.push(osc);
+    }
 
-    // Harmony oscillator (fifth above)
-    n.osc2 = ac.createOscillator();
-    n.osc2.type = tuning.waveform;
-    n.osc2.frequency.value = tuning.baseFreq * 1.498; // slightly detuned fifth
-
-    // Sub bass
-    n.osc3 = ac.createOscillator();
-    n.osc3.type = 'sine';
-    n.osc3.frequency.value = tuning.baseFreq * 0.5;
-
-    // Shimmer oscillator (octave up, detuned)
-    n.osc4 = ac.createOscillator();
-    n.osc4.type = 'sine';
-    n.osc4.frequency.value = tuning.baseFreq * 2.01;
-
-    // LFO for tremolo / movement
+    // --- LFO for tremolo ---
     n.lfo = ac.createOscillator();
     n.lfo.type = 'sine';
     n.lfo.frequency.value = 0.3;
     n.lfoGain = ac.createGain();
     n.lfoGain.gain.value = 0;
     n.lfo.connect(n.lfoGain);
+    n.lfoGain.connect(n.oscGains[0].gain);
+    allOscs.push(n.lfo);
 
-    // Gains for each osc
-    n.gain1 = ac.createGain(); n.gain1.gain.value = 0;
-    n.gain2 = ac.createGain(); n.gain2.gain.value = 0;
-    n.gain3 = ac.createGain(); n.gain3.gain.value = 0;
-    n.gain4 = ac.createGain(); n.gain4.gain.value = 0;
-
-    // Filter
+    // --- Filter (class-specific type) ---
     n.filter = ac.createBiquadFilter();
-    n.filter.type = 'lowpass';
+    n.filter.type = tuning.filterType;
     n.filter.frequency.value = 200;
     n.filter.Q.value = tuning.filterQ;
+    n.oscGains.forEach(g => g.connect(n.filter));
 
-    // Convolver-free reverb approximation: feedback delay
+    // --- Feedback delay reverb ---
     n.delay = ac.createDelay(1.0);
-    n.delay.delayTime.value = 0.3;
+    n.delay.delayTime.value = tuning.delayTime;
     n.feedback = ac.createGain();
     n.feedback.gain.value = tuning.reverbMix * 0.5;
     n.delayGain = ac.createGain();
     n.delayGain.gain.value = tuning.reverbMix;
-
-    // Master for this voice
-    n.voiceGain = ac.createGain();
-    n.voiceGain.gain.value = 0;
-
-    // Connect: oscs → gains → filter → voiceGain → masterGain
-    n.osc1.connect(n.gain1);
-    n.osc2.connect(n.gain2);
-    n.osc3.connect(n.gain3);
-    n.osc4.connect(n.gain4);
-
-    // LFO modulates osc1 gain for tremolo
-    n.lfoGain.connect(n.gain1.gain);
-
-    [n.gain1, n.gain2, n.gain3, n.gain4].forEach(g => g.connect(n.filter));
-
-    n.filter.connect(n.voiceGain);
-
-    // Delay feedback loop
     n.filter.connect(n.delay);
     n.delay.connect(n.feedback);
     n.feedback.connect(n.delay);
     n.delay.connect(n.delayGain);
-    n.delayGain.connect(n.voiceGain);
+
+    // --- Binaural beating: stereo panner with slightly detuned copy ---
+    n.panL = ac.createStereoPanner();
+    n.panR = ac.createStereoPanner();
+    n.panL.pan.value = -0.7;
+    n.panR.pan.value = 0.7;
+    n.binauralOsc = ac.createOscillator();
+    n.binauralOsc.type = 'sine';
+    n.binauralOsc.frequency.value = tuning.baseFreq + 3; // 3Hz binaural beat
+    n.binauralGain = ac.createGain();
+    n.binauralGain.gain.value = 0;
+    n.binauralOsc.connect(n.binauralGain);
+    n.binauralGain.connect(n.panR);
+    allOscs.push(n.binauralOsc);
+
+    // --- Heartbeat ---
+    n.heartOsc = ac.createOscillator();
+    n.heartOsc.type = 'sine';
+    n.heartOsc.frequency.value = 55; // low thump
+    n.heartGain = ac.createGain();
+    n.heartGain.gain.value = 0;
+    n.heartLfo = ac.createOscillator();
+    n.heartLfo.type = 'square'; // sharp on/off for "beat"
+    n.heartLfo.frequency.value = 1.1; // ~66 BPM resting
+    n.heartLfoGain = ac.createGain();
+    n.heartLfoGain.gain.value = 0;
+    n.heartLfo.connect(n.heartLfoGain);
+    n.heartLfoGain.connect(n.heartGain.gain);
+    n.heartOsc.connect(n.heartGain);
+    n.heartFilter = ac.createBiquadFilter();
+    n.heartFilter.type = 'lowpass';
+    n.heartFilter.frequency.value = 80;
+    n.heartFilter.Q.value = 1;
+    n.heartGain.connect(n.heartFilter);
+    allOscs.push(n.heartOsc, n.heartLfo);
+
+    // --- Tinnitus/ringing (high-pitched sine) ---
+    n.tinnitusOsc = ac.createOscillator();
+    n.tinnitusOsc.type = 'sine';
+    n.tinnitusOsc.frequency.value = 8200; // high ringing
+    n.tinnitusGain = ac.createGain();
+    n.tinnitusGain.gain.value = 0;
+    n.tinnitusOsc.connect(n.tinnitusGain);
+    // Slight vibrato on the tinnitus
+    n.tinnitusLfo = ac.createOscillator();
+    n.tinnitusLfo.type = 'sine';
+    n.tinnitusLfo.frequency.value = 5;
+    n.tinnitusLfoGain = ac.createGain();
+    n.tinnitusLfoGain.gain.value = 30;
+    n.tinnitusLfo.connect(n.tinnitusLfoGain);
+    n.tinnitusLfoGain.connect(n.tinnitusOsc.frequency);
+    allOscs.push(n.tinnitusOsc, n.tinnitusLfo);
+
+    // --- Phase transition cues (short one-shot oscillators triggered on phase change) ---
+    // We'll create these dynamically in update(), but we need a cue gain node
+    n.cueGain = ac.createGain();
+    n.cueGain.gain.value = 0.15;
+
+    // --- Voice gain (master for this drug) ---
+    n.voiceGain = ac.createGain();
+    n.voiceGain.gain.value = 0;
+
+    // Connect main signal path: filter → panL (dry) + delay → voiceGain
+    n.filter.connect(n.panL);
+    n.delayGain.connect(n.panL);
+    n.panL.connect(n.voiceGain);
+    n.panR.connect(n.voiceGain);
+    n.heartFilter.connect(n.voiceGain);
+    n.tinnitusGain.connect(n.voiceGain);
+    n.cueGain.connect(n.voiceGain);
 
     n.voiceGain.connect(masterGain);
 
-    // Start oscillators
-    n.osc1.start();
-    n.osc2.start();
-    n.osc3.start();
-    n.osc4.start();
-    n.lfo.start();
+    // Start all oscillators
+    allOscs.forEach(o => o.start());
+    n.allOscs = allOscs;
 
     n.tuning = tuning;
     n.drug = drug;
+    lastPhase[prefix] = '';
 
     nodes[prefix] = n;
     return n;
+  }
+
+  // Play a short phase-transition sound cue
+  function playPhaseCue(n, type) {
+    if (!ctx) return;
+    const ac = ctx;
+    const t = ac.currentTime;
+    const tuning = n.tuning;
+    const osc = ac.createOscillator();
+    const g = ac.createGain();
+
+    if (type === 'comeup') {
+      // Rising tone
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(tuning.baseFreq * 0.5, t);
+      osc.frequency.exponentialRampToValueAtTime(tuning.baseFreq * 2, t + 0.8);
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(0.12, t + 0.1);
+      g.gain.linearRampToValueAtTime(0, t + 0.8);
+    } else if (type === 'peak') {
+      // Crystallizing shimmer: two detuned high tones
+      osc.type = 'sine';
+      osc.frequency.value = tuning.baseFreq * 4;
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(0.08, t + 0.05);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 1.5);
+      const osc2 = ac.createOscillator();
+      osc2.type = 'sine';
+      osc2.frequency.value = tuning.baseFreq * 4.02; // slight detune = shimmer
+      const g2 = ac.createGain();
+      g2.gain.setValueAtTime(0, t);
+      g2.gain.linearRampToValueAtTime(0.08, t + 0.05);
+      g2.gain.exponentialRampToValueAtTime(0.001, t + 1.5);
+      osc2.connect(g2);
+      g2.connect(n.cueGain);
+      osc2.start(t);
+      osc2.stop(t + 1.6);
+    } else if (type === 'offset') {
+      // Descending tone
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(tuning.baseFreq * 2, t);
+      osc.frequency.exponentialRampToValueAtTime(tuning.baseFreq * 0.25, t + 1.2);
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(0.1, t + 0.1);
+      g.gain.linearRampToValueAtTime(0, t + 1.2);
+    }
+
+    osc.connect(g);
+    g.connect(n.cueGain);
+    osc.start(t);
+    osc.stop(t + 2);
   }
 
   function start(drug, prefix = 'solo') {
@@ -2426,9 +2606,10 @@ const AudioEngine = (() => {
     const n = nodes[prefix];
     if (!n) return;
     try {
-      [n.osc1, n.osc2, n.osc3, n.osc4, n.lfo].forEach(o => { try { o.stop(); } catch(e){} });
+      n.allOscs.forEach(o => { try { o.stop(); } catch(e){} });
     } catch(e) {}
     delete nodes[prefix];
+    delete lastPhase[prefix];
   }
 
   function stopAll() {
@@ -2440,17 +2621,26 @@ const AudioEngine = (() => {
   function toggleMute() {
     muted = !muted;
     if (!ctx) return muted;
-    if (muted) {
-      masterGain.gain.setTargetAtTime(0, ctx.currentTime, 0.3);
-    } else {
-      masterGain.gain.setTargetAtTime(0.35, ctx.currentTime, 0.3);
-    }
+    masterGain.gain.setTargetAtTime(muted ? 0 : 0.35, ctx.currentTime, 0.3);
     return muted;
   }
 
   function isMuted() { return muted; }
 
-  // Update audio parameters based on trip progress
+  // Determine current phase name
+  function getCurrentPhase(drug, elapsed) {
+    const d = drug.duration;
+    let acc = 0;
+    if (elapsed <= d.onset) return 'onset';
+    acc += d.onset;
+    if (elapsed <= acc + d.comeUp) return 'comeup';
+    acc += d.comeUp;
+    if (elapsed <= acc + d.peak) return 'peak';
+    acc += d.peak;
+    if (elapsed <= acc + d.offset) return 'offset';
+    return 'after';
+  }
+
   function update(drug, progress, prefix = 'solo') {
     const n = nodes[prefix];
     if (!n || !ctx) return;
@@ -2464,27 +2654,34 @@ const AudioEngine = (() => {
     const intensity = drug.effects.intensity / 10;
     const bodyLoad = drug.effects.bodyLoad / 10;
     const ego = drug.effects.egoDissolve / 10;
+    const cat = drug.category;
 
-    let volume = 0;
-    let filterFreq = 200;
-    let harmonyVol = 0;
-    let subVol = 0;
-    let shimmerVol = 0;
-    let detuneAmt = 0;
-    let lfoSpeed = 0.3;
-    let lfoDepth = 0;
-    let delayFeedback = tuning.reverbMix * 0.3;
+    // --- Phase transition detection & cues ---
+    const curPhase = getCurrentPhase(drug, elapsed);
+    if (lastPhase[prefix] && lastPhase[prefix] !== curPhase) {
+      if (curPhase === 'comeup') playPhaseCue(n, 'comeup');
+      else if (curPhase === 'peak') playPhaseCue(n, 'peak');
+      else if (curPhase === 'offset') playPhaseCue(n, 'offset');
+    }
+    lastPhase[prefix] = curPhase;
+
+    let volume = 0, filterFreq = 200, detuneAmt = 0;
+    let lfoSpeed = 0.3, lfoDepth = 0, delayFeedback = tuning.reverbMix * 0.3;
+    let harmonyVol = 0, subVol = 0, shimmerVol = 0, extraVol = 0;
+    let heartRate = 1.1, heartVol = 0;
+    let tinnitusVol = 0, binauralVol = 0;
 
     let acc = 0;
 
-    // Onset: low drone barely audible
+    // Onset
     if (elapsed <= d.onset) {
       const p = d.onset > 0 ? elapsed / d.onset : 1;
       volume = p * 0.15;
       filterFreq = 150 + p * 100;
       subVol = p * 0.1;
+      heartVol = p * 0.03;
     }
-    // Come up: growing, filter opening, harmonics appearing
+    // Come up
     else if (elapsed <= (acc = d.onset) + d.comeUp) {
       const p = (elapsed - acc) / d.comeUp;
       volume = 0.15 + p * 0.35;
@@ -2493,8 +2690,11 @@ const AudioEngine = (() => {
       subVol = 0.1 + p * 0.1;
       detuneAmt = p * tuning.detuneRange * 0.5;
       lfoDepth = p * 3;
+      heartVol = 0.03 + p * 0.04;
+      binauralVol = p * 0.04;
+      tinnitusVol = ego > 0.3 ? p * ego * 0.02 : 0;
     }
-    // Peak: full richness, all harmonics, shimmer, wide filter
+    // Peak
     else if (elapsed <= (acc = d.onset + d.comeUp) + d.peak) {
       const p = (elapsed - acc) / d.peak;
       volume = 0.5 + Math.sin(p * Math.PI) * 0.15 * intensity;
@@ -2502,45 +2702,96 @@ const AudioEngine = (() => {
       harmonyVol = 0.15 + visuals * 0.12;
       subVol = 0.2;
       shimmerVol = visuals * 0.1 * (0.5 + Math.sin(p * Math.PI) * 0.5);
+      extraVol = intensity > 0.5 ? 0.06 : 0;
       detuneAmt = tuning.detuneRange * (0.5 + ego * 0.5);
       lfoSpeed = 0.5 + bodyLoad * 0.8;
       lfoDepth = 5 + bodyLoad * 8;
       delayFeedback = tuning.reverbMix * (0.4 + ego * 0.3);
+      heartVol = 0.07;
+      binauralVol = 0.06 + ego * 0.04;
+      tinnitusVol = ego * 0.04 + (cat === 'Dissociatives' ? 0.03 : 0);
     }
-    // Offset: fading, filter closing
+    // Offset
     else if (elapsed <= (acc = d.onset + d.comeUp + d.peak) + d.offset) {
       const p = (elapsed - acc) / d.offset;
       volume = 0.5 * (1 - p * 0.5);
       filterFreq = 800 * (1 - p * 0.6) + 150;
       harmonyVol = 0.15 * (1 - p);
       subVol = 0.2 * (1 - p * 0.5);
-      shimmerVol = 0;
       detuneAmt = tuning.detuneRange * 0.3 * (1 - p);
       lfoDepth = 3 * (1 - p);
+      heartVol = 0.07 * (1 - p * 0.5);
+      binauralVol = 0.04 * (1 - p);
+      tinnitusVol = ego * 0.02 * (1 - p);
     }
-    // After effects: minimal, fading to silence
+    // After effects
     else {
       acc = d.onset + d.comeUp + d.peak + d.offset;
       const p = d.afterEffects > 0 ? Math.min((elapsed - acc) / d.afterEffects, 1) : 1;
       volume = 0.25 * (1 - p);
       filterFreq = 200 + 100 * (1 - p);
       subVol = 0.1 * (1 - p);
+      heartVol = 0.03 * (1 - p);
     }
 
-    // Apply parameters with smooth ramps
+    // --- Class-specific timbral adjustments ---
+    if (cat === 'Stimulants') {
+      heartRate = 1.6 + intensity * 0.8; // fast heartbeat
+      n.filter.Q.setTargetAtTime(3 + intensity * 5, t, 0.2);
+    } else if (cat === 'Depressants' || cat === 'Opioids') {
+      heartRate = 0.7 + (1 - intensity) * 0.3; // slow heartbeat
+      filterFreq = Math.min(filterFreq, 600); // always muffled
+      n.filter.Q.setTargetAtTime(tuning.filterQ, t, 0.2);
+    } else if (cat === 'Dissociatives') {
+      heartRate = 0.9 + Math.sin(t * 0.3) * 0.3; // irregular
+      n.delay.delayTime.setTargetAtTime(tuning.delayTime + Math.sin(t * 0.2) * 0.1, t, 0.3);
+    } else if (cat === 'Deliriants') {
+      // Random clicking/buzzing via irregular LFO
+      lfoSpeed = 2 + Math.sin(t * 0.7) * 1.5 + Math.random() * 0.5;
+      heartRate = 1.0 + Math.sin(t * 1.3) * 0.4; // irregular
+    } else if (cat === 'Entactogens') {
+      heartRate = 1.3 + intensity * 0.3; // elevated, steady
+    } else if (cat === 'Psychedelics') {
+      // Phase-shifted resonance
+      n.delay.delayTime.setTargetAtTime(tuning.delayTime + Math.sin(t * 0.15) * 0.08, t, 0.3);
+    }
+
+    // --- Audio breathing: master volume pulses with visual breathe rhythm ---
+    const breatheAmt = 1 + Math.sin(t * 1.5) * 0.08 * intensity + Math.sin(t * 0.7) * 0.05 * intensity;
+    breatheGain.gain.setTargetAtTime(Math.max(0.7, breatheAmt), t, 0.1);
+
+    // --- Apply all parameters ---
     const ramp = 0.15;
     n.voiceGain.gain.setTargetAtTime(volume, t, ramp);
     n.filter.frequency.setTargetAtTime(Math.max(80, filterFreq), t, ramp);
-    n.gain1.gain.setTargetAtTime(0.2, t, ramp);
-    n.gain2.gain.setTargetAtTime(harmonyVol, t, ramp);
-    n.gain3.gain.setTargetAtTime(subVol, t, ramp);
-    n.gain4.gain.setTargetAtTime(shimmerVol, t, ramp);
-    n.osc1.detune.setTargetAtTime(detuneAmt, t, ramp);
-    n.osc2.detune.setTargetAtTime(-detuneAmt * 0.7, t, ramp);
-    n.osc4.detune.setTargetAtTime(detuneAmt * 1.5, t, ramp);
+
+    // Oscillator gains
+    const gains = [0.2, harmonyVol, subVol, shimmerVol, extraVol];
+    for (let i = 0; i < n.oscGains.length; i++) {
+      n.oscGains[i].gain.setTargetAtTime(gains[i] || 0, t, ramp);
+    }
+
+    // Detune
+    n.oscs[0].detune.setTargetAtTime(detuneAmt, t, ramp);
+    if (n.oscs[1]) n.oscs[1].detune.setTargetAtTime(-detuneAmt * 0.7, t, ramp);
+    if (n.oscs[3]) n.oscs[3].detune.setTargetAtTime(detuneAmt * 1.5, t, ramp);
+
+    // LFO
     n.lfo.frequency.setTargetAtTime(lfoSpeed, t, ramp);
     n.lfoGain.gain.setTargetAtTime(lfoDepth, t, ramp);
     n.feedback.gain.setTargetAtTime(Math.min(0.85, delayFeedback), t, ramp);
+
+    // Binaural beat: intensity modulates detune amount for stronger beating
+    n.binauralOsc.frequency.setTargetAtTime(tuning.baseFreq + 3 + ego * 4, t, ramp);
+    n.binauralGain.gain.setTargetAtTime(binauralVol, t, ramp);
+
+    // Heartbeat
+    n.heartLfo.frequency.setTargetAtTime(heartRate, t, ramp);
+    n.heartLfoGain.gain.setTargetAtTime(heartVol, t, ramp);
+
+    // Tinnitus
+    n.tinnitusGain.gain.setTargetAtTime(tinnitusVol, t, ramp);
+    n.tinnitusOsc.frequency.setTargetAtTime(8200 + ego * 2000, t, ramp); // higher pitch with more ego dissolution
   }
 
   return { start, startDual, stop, stopAll, toggleMute, isMuted, update };
@@ -2644,6 +2895,7 @@ function updateSoloBackground(drug, progress, now) {
   ctx.fillRect(0, 0, W, H);
 
   if (intensity < 0.005) return;
+  const isMobile = W < 640;
 
   const cx = W * 0.5, cy = H * 0.45;
   const sides = Math.max(3, drug.flower.petalCount);
@@ -2677,7 +2929,7 @@ function updateSoloBackground(drug, progress, now) {
   // Dense glowing interconnected web pulsing with energy, like neural pathways on fire
   if (intensity > 0.05) {
     ctx.globalCompositeOperation = 'screen';
-    const gridSize = 20 + (1 - intensity) * 25; // much denser grid
+    const gridSize = (isMobile ? 35 : 20) + (1 - intensity) * 25;
     const cols = Math.ceil(W / gridSize) + 2;
     const rows = Math.ceil(H / gridSize) + 2;
     const webAlpha = intensity * visuals * 0.65;
@@ -2738,12 +2990,12 @@ function updateSoloBackground(drug, progress, now) {
           const [nnx, nny] = getNeighborPos(col, row + 1);
           drawConnection(nx, ny, nnx, nny, connAlpha, connWidth);
         }
-        // Diagonal connections for denser web
-        if (col < cols - 1 && row < rows - 1 && intensity > 0.3) {
+        // Diagonal connections for denser web (skip on mobile)
+        if (!isMobile && col < cols - 1 && row < rows - 1 && intensity > 0.3) {
           const [nnx, nny] = getNeighborPos(col + 1, row + 1);
           drawConnection(nx, ny, nnx, nny, connAlpha * 0.5, connWidth * 0.6);
         }
-        if (col > 0 && row < rows - 1 && intensity > 0.3) {
+        if (!isMobile && col > 0 && row < rows - 1 && intensity > 0.3) {
           const [nnx, nny] = getNeighborPos(col - 1, row + 1);
           drawConnection(nx, ny, nnx, nny, connAlpha * 0.5, connWidth * 0.6);
         }
@@ -2883,7 +3135,7 @@ function updateSoloBackground(drug, progress, now) {
   // ── Layer 5: Tracer echoes — concentric afterimage rings expanding ──
   if (intensity > 0.1) {
     ctx.globalCompositeOperation = 'screen';
-    const tracerCount = Math.floor(8 + visuals * 18);
+    const tracerCount = Math.floor(isMobile ? 4 + visuals * 8 : 8 + visuals * 18);
     const tracerAlpha = (intensity - 0.1) * 0.8;
 
     for (let tr = 0; tr < tracerCount; tr++) {
@@ -3004,7 +3256,289 @@ function updateSoloBackground(drug, progress, now) {
     }
   }
 
-  // ── Layer 8: Breathing vignette ──
+  // ── Layer 8: Drug-class-specific visual signatures ──
+  const cat = drug.category;
+  if (intensity > 0.15) {
+    ctx.save();
+
+    if (cat === 'Psychedelics' || cat === 'Hallucinogens') {
+      // Geometric pattern overlay: rotating hexagonal/triangular grids
+      ctx.globalCompositeOperation = 'screen';
+      const geoAlpha = intensity * visuals * 0.25;
+      const patternR = Math.min(W, H) * 0.4 * breathe;
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(time * 0.1);
+      // Color saturation boost: bright shifting hue
+      const hueShift = (time * 30) % 360;
+      for (let ring = 0; ring < 6; ring++) {
+        const rr = patternR * (0.15 + ring * 0.15);
+        const sides2 = 6 + ring % 3;
+        ctx.beginPath();
+        for (let i = 0; i <= sides2; i++) {
+          const a = (Math.PI * 2 / sides2) * i + time * 0.2 * (ring % 2 === 0 ? 1 : -1);
+          const wobble2 = Math.sin(a * 3 + time * 1.5) * rr * 0.08 * intensity;
+          const x = Math.cos(a) * (rr + wobble2);
+          const y = Math.sin(a) * (rr + wobble2);
+          if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+        ctx.closePath();
+        ctx.strokeStyle = `hsla(${(hueShift + ring * 40) % 360}, 80%, 60%, ${geoAlpha * (1 - ring * 0.12)})`;
+        ctx.lineWidth = 1 + intensity * 2;
+        ctx.stroke();
+        // Cross-connections between vertices
+        if (ring > 0 && intensity > 0.4) {
+          const prevR = patternR * (0.15 + (ring - 1) * 0.15);
+          for (let i = 0; i < sides2; i++) {
+            const a1 = (Math.PI * 2 / sides2) * i + time * 0.2 * (ring % 2 === 0 ? 1 : -1);
+            const a2 = (Math.PI * 2 / sides2) * i + time * 0.2 * ((ring - 1) % 2 === 0 ? 1 : -1);
+            ctx.beginPath();
+            ctx.moveTo(Math.cos(a1) * rr, Math.sin(a1) * rr);
+            ctx.lineTo(Math.cos(a2) * prevR, Math.sin(a2) * prevR);
+            ctx.strokeStyle = `hsla(${(hueShift + ring * 40) % 360}, 70%, 55%, ${geoAlpha * 0.3})`;
+            ctx.lineWidth = 0.5 + intensity;
+            ctx.stroke();
+          }
+        }
+      }
+      ctx.restore();
+    }
+
+    else if (cat === 'Dissociatives') {
+      // Tunnel vision: heavy closing vignette + desaturation + pixelation fragments
+      ctx.globalCompositeOperation = 'source-over';
+      const tunnelR = W * (0.1 + (1 - intensity) * 0.3) * breathe;
+      const tunnelOuter = W * 0.45;
+      const tGrd = ctx.createRadialGradient(cx, cy, tunnelR, cx, cy, tunnelOuter);
+      tGrd.addColorStop(0, `rgba(0,0,0,0)`);
+      tGrd.addColorStop(0.5, `rgba(10,10,20,${intensity * 0.3})`);
+      tGrd.addColorStop(1, `rgba(5,5,15,${intensity * 0.6})`);
+      ctx.fillStyle = tGrd;
+      ctx.fillRect(0, 0, W, H);
+      // Fragmentation: scattered rectangles with slight offset
+      if (intensity > 0.4) {
+        ctx.globalCompositeOperation = 'screen';
+        const fragCount = Math.floor(intensity * 15);
+        for (let f = 0; f < fragCount; f++) {
+          const fx = cx + Math.sin(time * 0.5 + f * 2.1) * W * 0.3;
+          const fy = cy + Math.cos(time * 0.4 + f * 1.7) * H * 0.3;
+          const fs = 10 + Math.random() * 30 * intensity;
+          ctx.fillStyle = `rgba(${drugRgb[0]},${drugRgb[1]},${drugRgb[2]},${intensity * 0.08})`;
+          ctx.fillRect(fx, fy, fs, fs * 0.6);
+        }
+      }
+    }
+
+    else if (cat === 'Deliriants') {
+      // Dark flickering shadows at edges + visual static noise
+      ctx.globalCompositeOperation = 'source-over';
+      // Shadow figures: dark blobs at screen edges that flicker
+      const shadowCount = Math.floor(3 + intensity * 5);
+      for (let s = 0; s < shadowCount; s++) {
+        const flicker = Math.sin(time * 3 + s * 4.7) * 0.5 + 0.5;
+        if (flicker < 0.3) continue; // intermittent appearance
+        const edge = s % 4; // 0=top, 1=right, 2=bottom, 3=left
+        let sx, sy;
+        const drift = Math.sin(time * 0.5 + s * 2.3) * 50;
+        if (edge === 0) { sx = W * (0.2 + s * 0.15) + drift; sy = 30; }
+        else if (edge === 1) { sx = W - 40; sy = H * (0.2 + s * 0.12) + drift; }
+        else if (edge === 2) { sx = W * (0.3 + s * 0.13) + drift; sy = H - 40; }
+        else { sx = 30; sy = H * (0.3 + s * 0.14) + drift; }
+        const sr = 20 + intensity * 40 * flicker;
+        const sGrd = ctx.createRadialGradient(sx, sy, 0, sx, sy, sr);
+        sGrd.addColorStop(0, `rgba(0,0,0,${intensity * 0.4 * flicker})`);
+        sGrd.addColorStop(1, `rgba(0,0,0,0)`);
+        ctx.fillStyle = sGrd;
+        ctx.fillRect(sx - sr, sy - sr, sr * 2, sr * 2);
+      }
+      // Visual static/noise grain (skip on mobile for performance)
+      if (intensity > 0.3 && !isMobile) {
+        const imgData = ctx.getImageData(0, 0, Math.min(W, 400), Math.min(H, 300));
+        const d2 = imgData.data;
+        const noiseAmt = intensity * 25;
+        for (let p = 0; p < d2.length; p += 16) { // sample every 4th pixel for perf
+          const noise = (Math.random() - 0.5) * noiseAmt;
+          d2[p] = Math.max(0, Math.min(255, d2[p] + noise));
+          d2[p+1] = Math.max(0, Math.min(255, d2[p+1] + noise));
+          d2[p+2] = Math.max(0, Math.min(255, d2[p+2] + noise));
+        }
+        ctx.putImageData(imgData, 0, 0);
+      }
+    }
+
+    else if (cat === 'Stimulants') {
+      // Sharpened edges: high contrast overlay + slight vibration/jitter
+      ctx.globalCompositeOperation = 'overlay';
+      const contrastAlpha = intensity * 0.15;
+      // Radial contrast boost
+      const cGrd = ctx.createRadialGradient(cx, cy, 0, cx, cy, W * 0.6);
+      cGrd.addColorStop(0, `rgba(255,255,255,${contrastAlpha})`);
+      cGrd.addColorStop(1, `rgba(0,0,0,${contrastAlpha * 0.5})`);
+      ctx.fillStyle = cGrd;
+      ctx.fillRect(0, 0, W, H);
+      // Vibration: rapid tiny offset lines
+      if (intensity > 0.3) {
+        ctx.globalCompositeOperation = 'screen';
+        const jitter = intensity * 3;
+        for (let j = 0; j < 8; j++) {
+          const jx = cx + (Math.random() - 0.5) * jitter * 20;
+          const jy = cy + (Math.random() - 0.5) * jitter * 20;
+          ctx.beginPath();
+          ctx.arc(jx, jy, 1 + Math.random() * 2, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(255,255,255,${intensity * 0.06})`;
+          ctx.fill();
+        }
+      }
+    }
+
+    else if (cat === 'Depressants' || cat === 'Opioids') {
+      // Warm soft blur: warm color temperature shift + soft edges
+      ctx.globalCompositeOperation = 'screen';
+      const warmAlpha = intensity * 0.12;
+      // Warm overlay
+      ctx.fillStyle = `rgba(180,120,60,${warmAlpha})`;
+      ctx.fillRect(0, 0, W, H);
+      // Dreamy soft glow from center
+      const dreamR = Math.min(W, H) * 0.5 * breathe;
+      const dGrd = ctx.createRadialGradient(cx, cy, 0, cx, cy, dreamR);
+      dGrd.addColorStop(0, `rgba(255,200,150,${warmAlpha * 0.6})`);
+      dGrd.addColorStop(0.5, `rgba(200,150,100,${warmAlpha * 0.3})`);
+      dGrd.addColorStop(1, `rgba(100,70,40,0)`);
+      ctx.fillStyle = dGrd;
+      ctx.fillRect(0, 0, W, H);
+    }
+
+    else if (cat === 'Entactogens') {
+      // Everything glows warmer + sparkle particles
+      ctx.globalCompositeOperation = 'screen';
+      const warmGlow = intensity * 0.1;
+      ctx.fillStyle = `rgba(255,180,200,${warmGlow})`;
+      ctx.fillRect(0, 0, W, H);
+      // Sparkle particles
+      const sparkleCount = Math.floor(isMobile ? 10 + intensity * 15 : 20 + intensity * 40);
+      for (let sp = 0; sp < sparkleCount; sp++) {
+        const spPhase = sp * 1.618 + time * 0.8;
+        const spx = W * ((Math.sin(spPhase * 0.37) + 1) / 2);
+        const spy = H * ((Math.cos(spPhase * 0.29) + 1) / 2);
+        const sparkle = Math.pow(Math.max(0, Math.sin(time * 3 + sp * 2.7)), 8); // sharp twinkle
+        if (sparkle < 0.1) continue;
+        const spr = 1 + sparkle * 3 * intensity;
+        ctx.beginPath();
+        ctx.arc(spx, spy, spr, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255,255,255,${sparkle * intensity * 0.5})`;
+        ctx.fill();
+      }
+    }
+
+    else if (cat === 'Cannabinoids') {
+      // Slight warm haze + gentle color shift
+      ctx.globalCompositeOperation = 'screen';
+      const hazeAlpha = intensity * 0.08;
+      ctx.fillStyle = `rgba(160,180,100,${hazeAlpha})`;
+      ctx.fillRect(0, 0, W, H);
+    }
+
+    ctx.restore();
+  }
+
+  // ── Layer 9: Phase-specific visual phenomena ──
+  if (intensity > 0.05) {
+    const phase = getPhaseInfo(drug, progress);
+    const phaseName = phase.name;
+    const pp = phase.phaseProgress;
+
+    if (phaseName === 'Come Up') {
+      // Visual snow/grain that resolves into patterns
+      ctx.globalCompositeOperation = 'screen';
+      const snowAlpha = (1 - pp) * intensity * 0.15; // fades as patterns emerge
+      const snowCount = Math.floor((1 - pp) * 60);
+      for (let s = 0; s < snowCount; s++) {
+        const sx = Math.random() * W;
+        const sy = Math.random() * H;
+        ctx.fillStyle = `rgba(${drugRgb[0]},${drugRgb[1]},${drugRgb[2]},${snowAlpha * Math.random()})`;
+        ctx.fillRect(sx, sy, 1 + Math.random() * 2, 1 + Math.random() * 2);
+      }
+    }
+
+    else if (phaseName === 'Offset') {
+      // Melting distortion: vertical streaks pulling downward
+      ctx.globalCompositeOperation = 'screen';
+      const meltAlpha = pp * intensity * 0.12;
+      const meltCount = Math.floor(8 + pp * 12);
+      for (let m = 0; m < meltCount; m++) {
+        const mx = W * (m / meltCount) + Math.sin(time + m) * 20;
+        const mLen = 30 + pp * 80 * intensity;
+        const my = H * 0.3 + Math.sin(time * 0.5 + m * 1.3) * H * 0.2;
+        ctx.beginPath();
+        ctx.moveTo(mx, my);
+        ctx.quadraticCurveTo(mx + Math.sin(time + m) * 10, my + mLen * 0.5, mx, my + mLen);
+        ctx.strokeStyle = `rgba(${drugRgb[0]},${drugRgb[1]},${drugRgb[2]},${meltAlpha})`;
+        ctx.lineWidth = 2 + intensity * 3;
+        ctx.lineCap = 'round';
+        ctx.stroke();
+      }
+    }
+
+    else if (phaseName === 'After Effects') {
+      // Desaturation: overlay dark muted layer
+      ctx.globalCompositeOperation = 'source-over';
+      const desatAlpha = pp * 0.25;
+      ctx.fillStyle = `rgba(20,20,30,${desatAlpha})`;
+      ctx.fillRect(0, 0, W, H);
+    }
+  }
+
+  // ── Layer 10: Alex Grey eye motif ──
+  if (intensity > 0.35 && visuals > 0.3) {
+    ctx.save();
+    ctx.globalCompositeOperation = 'screen';
+    ctx.translate(cx, cy);
+    // Eye opens wider at peak
+    const eyeOpen = intensity * visuals;
+    const eyeW = Math.min(W, H) * 0.12 * eyeOpen;
+    const eyeH = eyeW * 0.45 * eyeOpen;
+    const irisR = eyeW * 0.25;
+    const pupilR = irisR * (0.3 + (1 - intensity) * 0.3); // dilates at peak
+    const eyeAlpha = (intensity - 0.35) * visuals * 0.4;
+    const eyeRot = Math.sin(time * 0.3) * 0.05;
+    ctx.rotate(eyeRot);
+
+    // Eye outline (almond shape)
+    ctx.beginPath();
+    ctx.moveTo(-eyeW, 0);
+    ctx.quadraticCurveTo(0, -eyeH, eyeW, 0);
+    ctx.quadraticCurveTo(0, eyeH, -eyeW, 0);
+    ctx.closePath();
+    ctx.strokeStyle = `rgba(${drugAccent[0]},${drugAccent[1]},${drugAccent[2]},${eyeAlpha})`;
+    ctx.lineWidth = 1.5 + intensity * 2;
+    ctx.stroke();
+
+    // Iris
+    const irisGrd = ctx.createRadialGradient(0, 0, 0, 0, 0, irisR);
+    irisGrd.addColorStop(0, `rgba(${drugRgb[0]},${drugRgb[1]},${drugRgb[2]},${eyeAlpha * 0.8})`);
+    irisGrd.addColorStop(0.7, `rgba(${drugAccent[0]},${drugAccent[1]},${drugAccent[2]},${eyeAlpha * 0.5})`);
+    irisGrd.addColorStop(1, `rgba(${drugRgb[0]},${drugRgb[1]},${drugRgb[2]},${eyeAlpha * 0.2})`);
+    ctx.beginPath();
+    ctx.arc(0, 0, irisR, 0, Math.PI * 2);
+    ctx.fillStyle = irisGrd;
+    ctx.fill();
+
+    // Pupil (dark center)
+    ctx.beginPath();
+    ctx.arc(0, 0, pupilR, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(0,0,0,${eyeAlpha * 0.9})`;
+    ctx.fill();
+
+    // Light reflection dot
+    ctx.beginPath();
+    ctx.arc(irisR * 0.3, -irisR * 0.25, pupilR * 0.3, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(255,255,255,${eyeAlpha * 0.6})`;
+    ctx.fill();
+
+    ctx.restore();
+  }
+
+  // ── Layer 11: Breathing vignette ──
   // Inner color glow that pulses with the breathing
   ctx.globalCompositeOperation = 'screen';
   const innerGlowR = Math.min(W, H) * (0.25 + intensity * 0.15) * breathe;
@@ -3333,6 +3867,49 @@ function renderFlower(g, drug, progress, isSolo, now) {
     seed.setAttribute('fill', f.primaryColor);
     seed.setAttribute('opacity', 0.7);
     headG.appendChild(seed);
+  }
+
+  // ─── Flower distortion effects (solo view only) ───
+  if (isSolo && glowOn) {
+    const drugVisuals = drug.effects.visuals / 10;
+
+    // Hue rotation: animate the hueRotate filter during peak
+    if (drugVisuals > 0.3) {
+      const hueAngle = Math.sin(time * 0.5) * 30 * drugVisuals;
+      const hueFilter = g.ownerSVGElement && g.ownerSVGElement.querySelector(`#hueshift-${drug.id} feColorMatrix`);
+      if (hueFilter) hueFilter.setAttribute('values', hueAngle.toFixed(1));
+      headG.setAttribute('filter', `url(#glow-${drug.id}) url(#hueshift-${drug.id})`);
+    }
+
+    // Warp distortion during peak for high-visual drugs
+    if (drugVisuals > 0.5) {
+      const warpDisp = g.ownerSVGElement && g.ownerSVGElement.querySelector(`#warp-${drug.id} feDisplacementMap`);
+      const warpTurb = g.ownerSVGElement && g.ownerSVGElement.querySelector(`#warp-${drug.id} feTurbulence`);
+      if (warpDisp && warpTurb) {
+        const warpAmt = Math.sin(time * 0.8) * 4 * drugVisuals;
+        warpDisp.setAttribute('scale', warpAmt.toFixed(1));
+        warpTurb.setAttribute('seed', Math.floor(time * 2) % 100);
+      }
+    }
+
+    // After-image ghost trails: faded copies of the flower head offset slightly
+    if (drugVisuals > 0.4) {
+      const trailCount = Math.floor(drugVisuals * 3);
+      for (let tr = trailCount; tr >= 1; tr--) {
+        const ghostG = document.createElementNS(svgNS, 'g');
+        const ghostOffset = tr * 2.5;
+        const ghostAngle = Math.sin(time * 0.7 + tr) * 3;
+        const ghostAlpha = (drugVisuals - 0.4) * 0.15 / tr;
+        ghostG.setAttribute('transform',
+          `translate(${headX + ghostOffset * Math.sin(time + tr)}, ${wiltDrop + ghostOffset * 0.5}) rotate(${wiltTilt + sway * 0.5 + ghostAngle})`);
+        ghostG.setAttribute('opacity', ghostAlpha.toFixed(3));
+        // Clone all petals into ghost
+        for (const child of Array.from(headG.childNodes)) {
+          ghostG.appendChild(child.cloneNode(true));
+        }
+        g.appendChild(ghostG);
+      }
+    }
   }
 
   g.appendChild(headG);
