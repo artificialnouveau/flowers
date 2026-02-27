@@ -267,6 +267,43 @@
     margin-top: 4px;
   }
 
+  .av-dropdown {
+    margin-top: 8px;
+    border: 1px solid #334155;
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .av-dropdown summary {
+    cursor: pointer;
+    padding: 6px 10px;
+    font-size: 0.72rem;
+    color: #94a3b8;
+    background: #1e293b;
+    list-style: none;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .av-dropdown summary::-webkit-details-marker { display: none; }
+  .av-dropdown summary::before {
+    content: '▸';
+    display: inline-block;
+    transition: transform 0.2s;
+    font-size: 0.65rem;
+  }
+  .av-dropdown[open] summary::before { transform: rotate(90deg); }
+  .av-dropdown .av-dropdown-body {
+    padding: 8px 10px;
+    font-size: 0.68rem;
+    color: #64748b;
+    line-height: 1.5;
+    background: #0f172a;
+  }
+  .av-dropdown .av-dropdown-body b { color: #94a3b8; font-weight: 500; }
+  .av-dropdown .av-dropdown-body p { margin: 0 0 6px 0; }
+  .av-dropdown .av-dropdown-body p:last-child { margin-bottom: 0; }
+
   .pw-link {
     display: inline-block;
     margin-top: 8px;
@@ -1322,12 +1359,11 @@ function setupOverlay() {
     if (e.key === 'm' && soloState) { AudioEngine.toggleMute(); updateSoundBtn('soloSoundBtn'); }
   });
 
-  document.getElementById('soloSoundBtn').addEventListener('click', async () => {
+  document.getElementById('soloSoundBtn').addEventListener('click', () => {
     AudioEngine.toggleMute();
-    // On mobile (iOS), we must await restart() so the AudioContext fully resumes
-    // before oscillators are started — otherwise they are permanently silent.
+    // Rebuild audio graph synchronously inside this tap gesture so iOS unlocks audio.
     if (!AudioEngine.isMuted() && soloState) {
-      try { await AudioEngine.restart(soloState.drug, 'solo'); } catch(e) {}
+      try { AudioEngine.restart(soloState.drug, 'solo'); } catch(e) {}
     }
     updateSoundBtn('soloSoundBtn');
   });
@@ -1372,8 +1408,10 @@ function openSolo(drug) {
     `<span><b>Ego dissolution:</b> ${e.egoDissolve}/10</span>` +
     `<span><b>Total duration:</b> ${formatTime(getTotalDuration(drug))}</span>` +
     `<span><b>Peak:</b> ${formatTime(dur.peak)}</span>` +
-    `<br><span class="av-desc"><b>Background visuals:</b> Each drug class has unique visual signatures: psychedelics show geometric overlays and color cycling, dissociatives create tunnel vision and fragmentation, deliriants flicker dark shadows and static, stimulants sharpen contrast, depressants add warm blur, and entactogens sparkle. The eye motif opens wider at peak. Visual snow appears during come-up, melting streaks during offset.</span>` +
-    `<span class="av-desc"><b>Sound:</b> Class-specific timbres shape each drug (resonant harmonics for psychedelics, hollow metallic for dissociatives, percussive for stimulants, warm bass for depressants, choir-like for entactogens, dissonant for deliriants). A heartbeat speeds up for stimulants, slows for depressants. High-pitched ringing rises with ego dissolution. Binaural beating creates spatial depth at peak. Audio cues mark phase transitions.</span>`;
+    `<details class="av-dropdown"><summary>Background Visuals & Sound</summary><div class="av-dropdown-body">` +
+    `<p><b>Background visuals:</b> Each drug class has unique visual signatures: psychedelics show geometric overlays and color cycling, dissociatives create tunnel vision and fragmentation, deliriants flicker dark shadows and static, stimulants sharpen contrast, depressants add warm blur, and entactogens sparkle. The eye motif opens wider at peak. Visual snow appears during come-up, melting streaks during offset.</p>` +
+    `<p><b>Sound:</b> Class-specific timbres shape each drug (resonant harmonics for psychedelics, hollow metallic for dissociatives, percussive for stimulants, warm bass for depressants, choir-like for entactogens, dissonant for deliriants). A heartbeat speeds up for stimulants, slows for depressants. High-pitched ringing rises with ego dissolution. Binaural beating creates spatial depth at peak. Audio cues mark phase transitions.</p>` +
+    `</div></details>`;
 
   const container = document.getElementById('soloFlowerContainer');
   container.innerHTML = '';
@@ -1639,9 +1677,10 @@ function openCompare() {
   tag.style.color = interaction.color;
   tag.style.border = `1px solid ${interaction.color}50`;
   document.getElementById('interactionDesc').innerHTML = interaction.desc +
-    `<br><span style="color:#64748b;font-size:0.68rem;line-height:1.5;display:block;margin-top:6px;">` +
-    `<b style="color:#94a3b8">Background:</b> The combined visuals blend both drugs' class-specific effects. Synergistic combos intensify geometry, color cycling, and tunnel/sparkle effects; antagonistic combos dampen them. ` +
-    `<b style="color:#94a3b8">Sound:</b> Both drugs' class-specific timbres play simultaneously with independent heartbeats and ringing. Listen for how their frequencies interact. The hybrid flower shows the predicted combined experience.</span>`;
+    `<details class="av-dropdown" style="margin-top:8px;"><summary>Background Visuals & Sound</summary><div class="av-dropdown-body">` +
+    `<p><b>Background:</b> The combined visuals blend both drugs' class-specific effects. Synergistic combos intensify geometry, color cycling, and tunnel/sparkle effects; antagonistic combos dampen them.</p>` +
+    `<p><b>Sound:</b> Both drugs' class-specific timbres play simultaneously with independent heartbeats and ringing. Listen for how their frequencies interact. The hybrid flower shows the predicted combined experience.</p>` +
+    `</div></details>`;
 
   // Build side-by-side flowers
   const container = document.getElementById('compareFlowers');
@@ -2015,12 +2054,11 @@ function setupCompareMode() {
     compareState.scrubbing = false;
   });
 
-  document.getElementById('compareSoundBtn').addEventListener('click', async () => {
+  document.getElementById('compareSoundBtn').addEventListener('click', () => {
     AudioEngine.toggleMute();
     if (!AudioEngine.isMuted() && compareState) {
       try {
-        await AudioEngine.restart(compareState.drugs[0], 'comp0');
-        await AudioEngine.restart(compareState.drugs[1], 'comp1');
+        AudioEngine.restartDual(compareState.drugs[0], compareState.drugs[1]);
       } catch(e) {}
     }
     updateSoundBtn('compareSoundBtn');
@@ -2697,34 +2735,54 @@ const AudioEngine = (() => {
 
   function toggleMute() {
     muted = !muted;
-    // On iOS, AudioContext must be created/resumed synchronously inside user gesture.
-    // Create ctx here so the gesture is registered, even if we await later.
-    if (!ctx) getCtx();
-    if (muted && ctx && masterGain) {
-      masterGain.gain.setTargetAtTime(0, ctx.currentTime, 0.1);
+    if (muted) {
+      // Muting — ramp down and leave context alone
+      if (ctx && masterGain) {
+        masterGain.gain.setTargetAtTime(0, ctx.currentTime, 0.1);
+      }
     }
     return muted;
   }
 
-  // Force-rebuild audio graph (for mobile: call from user gesture after unmuting).
-  // MUST be called with await — waits for AudioContext to actually resume before
-  // starting oscillators, which is required on iOS.
-  async function restart(drug, prefix = 'solo') {
-    // If old context is closed/broken, nuke it
-    if (ctx && ctx.state === 'closed') {
+  // iOS audio unlock: play a tiny silent buffer to "prime" the AudioContext.
+  // Must be called synchronously inside a user gesture handler.
+  function unlockCtx() {
+    if (!ctx) return;
+    try {
+      const buf = ctx.createBuffer(1, 1, 22050);
+      const src = ctx.createBufferSource();
+      src.buffer = buf;
+      src.connect(ctx.destination);
+      src.start(0);
+    } catch(e) {}
+  }
+
+  // Ensure a fresh, unlocked AudioContext exists. Call once per gesture.
+  function ensureFreshCtx() {
+    if (ctx) {
+      try { Object.keys(nodes).forEach(k => stop(k)); } catch(e) {}
+      try { ctx.close(); } catch(e) {}
       ctx = null; masterGain = null; breatheGain = null; nodes = {};
     }
-    // Create context synchronously (registers user gesture on iOS)
-    if (!ctx) getCtx();
-    // CRITICAL: await resume before starting any oscillators.
-    // On iOS, oscillators started on a suspended context are permanently silent.
-    if (ctx.state === 'suspended') {
-      try { await ctx.resume(); } catch(e) {}
-    }
-    if (nodes[prefix]) stop(prefix);
+    getCtx();
+    unlockCtx();
+  }
+
+  // Rebuild audio from scratch — call synchronously from user gesture handler.
+  function restart(drug, prefix = 'solo') {
+    ensureFreshCtx();
     buildGraph(drug, prefix);
     active = true;
-    masterGain.gain.setTargetAtTime(0.8, ctx.currentTime, 0.05);
+    masterGain.gain.value = 0.8;
+  }
+
+  // Rebuild dual audio (compare mode) — single fresh context for both drugs.
+  function restartDual(drug1, drug2) {
+    ensureFreshCtx();
+    buildGraph(drug1, 'comp0');
+    buildGraph(drug2, 'comp1');
+    active = true;
+    masterGain.gain.value = 0.7;
   }
 
   function isMuted() { return muted; }
@@ -2899,7 +2957,7 @@ const AudioEngine = (() => {
     n.tinnitusOsc.frequency.setTargetAtTime(8200 + ego * 2000, t, ramp); // higher pitch with more ego dissolution
   }
 
-  return { start, startDual, restart, stop, stopAll, toggleMute, isMuted, update };
+  return { start, startDual, restart, restartDual, stop, stopAll, toggleMute, isMuted, update };
 })();
 
 // ─── Easing ───
