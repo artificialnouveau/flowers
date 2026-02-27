@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Flower Drug Animations</title>
+<title>Flowers</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -112,6 +112,7 @@
     align-items: center;
     justify-content: center;
     backdrop-filter: blur(8px);
+    transition: background 0.4s ease;
   }
   .overlay.open { display: flex; }
 
@@ -233,7 +234,7 @@
 <body>
 
 <header>
-  <h1>Flower Drug Animations</h1>
+  <h1>Flowers</h1>
   <div class="controls">
     <select id="categoryFilter">
       <option value="All">All Categories</option>
@@ -254,6 +255,7 @@
     <span><b>Center</b> = ego dissolution</span>
     <span><b>Stem</b> = total duration</span>
     <span><b>Glow</b> = peak phase</span>
+    <span><b>Background</b> = hallucination intensity (brighter = stronger visuals)</span>
   </div>
 </div>
 
@@ -306,7 +308,7 @@ const drugs = [
     id: "dmt", name: "DMT", category: "Psychedelics", subcategory: "Tryptamines",
     duration: { onset: 0.05, comeUp: 0.08, peak: 0.17, offset: 0.17, afterEffects: 0.5 },
     effects: { cognitiveComplexity: 10, euphoria: 8, intensity: 10, bodyLoad: 6, egoDissolve: 10, visuals: 10 },
-    flower: { petalCount: 12, petalShape: "wavy", primaryColor: "#e11d48", secondaryColor: "#fbbf24", petalRadius: 42, centerSize: 18, stemHeight: 12 }
+    flower: { petalCount: 12, petalShape: "wavy", primaryColor: "#e11d48", secondaryColor: "#fbbf24", petalRadius: 42, centerSize: 18, stemHeight: 30 }
   },
   {
     id: "mescaline", name: "Mescaline", category: "Psychedelics", subcategory: "Phenethylamines",
@@ -486,11 +488,11 @@ function renderGrid(category) {
     card.addEventListener('click', () => openSolo(drug));
     grid.appendChild(card);
 
-    startGridAnimation(drug, g);
+    startGridAnimation(drug, g, card);
   });
 }
 
-function startGridAnimation(drug, g) {
+function startGridAnimation(drug, g, card) {
   const state = { startTime: performance.now(), playing: true, raf: null };
   gridAnimations[drug.id] = state;
 
@@ -502,6 +504,7 @@ function startGridAnimation(drug, g) {
       const t = elapsed % loopDur;
       const progress = Math.min(t / totalDur, 1);
       renderFlower(g, drug, progress, false, now);
+      updateCardBackground(card, drug, progress, now);
     }
     state.raf = requestAnimationFrame(tick);
   }
@@ -519,9 +522,11 @@ function setupOverlay() {
     if (!soloState) return;
     soloState.scrubbing = true;
     const progress = timeline.value / 1000;
-    renderFlower(soloState.g, soloState.drug, progress, true, performance.now());
+    const now = performance.now();
+    renderFlower(soloState.g, soloState.drug, progress, true, now);
     updatePhaseLabel(soloState.drug, progress);
     updateTimeLabels(soloState.drug, progress);
+    updateSoloBackground(soloState.drug, progress, now);
   });
   timeline.addEventListener('change', () => {
     if (!soloState) return;
@@ -587,6 +592,7 @@ function openSolo(drug) {
       document.getElementById('timeline').value = progress * 1000;
       updatePhaseLabel(drug, progress);
       updateTimeLabels(drug, progress);
+      updateSoloBackground(drug, progress, now);
 
       if (progress >= 1) {
         soloState.playing = false;
@@ -599,7 +605,9 @@ function openSolo(drug) {
 }
 
 function closeSolo() {
-  document.getElementById('overlay').classList.remove('open');
+  const overlay = document.getElementById('overlay');
+  overlay.classList.remove('open');
+  overlay.style.background = '';
   if (soloState && soloState.raf) cancelAnimationFrame(soloState.raf);
   soloState = null;
 }
@@ -723,6 +731,153 @@ function petalPath(shape, r) {
 // ─── Easing ───
 function easeInOut(t) { return t < 0.5 ? 2*t*t : 1-Math.pow(-2*t+2,2)/2; }
 
+// ─── Color helpers ───
+function hexToRgb(hex) {
+  const v = parseInt(hex.replace('#', ''), 16);
+  return [(v >> 16) & 255, (v >> 8) & 255, v & 255];
+}
+
+function lerpColor(a, b, t) {
+  return [
+    Math.round(a[0] + (b[0] - a[0]) * t),
+    Math.round(a[1] + (b[1] - a[1]) * t),
+    Math.round(a[2] + (b[2] - a[2]) * t),
+  ];
+}
+
+// ─── Solo reactive background ───
+function updateSoloBackground(drug, progress, now) {
+  const overlay = document.getElementById('overlay');
+  const d = drug.duration;
+  const total = getTotalDuration(drug);
+  const t = progress * total;
+  const time = now / 1000;
+
+  // Base dark background
+  const dark = [15, 15, 26];
+  // Drug's own color, muted
+  const drugRgb = hexToRgb(drug.flower.primaryColor);
+  const drugAccent = hexToRgb(drug.flower.secondaryColor);
+
+  // Phase-dependent tint and intensity
+  let tint = dark;
+  let glowAlpha = 0;
+  let pulseRate = 0;
+
+  let acc = 0;
+
+  if (t <= d.onset) {
+    // Very dark, barely a hint
+    const p = d.onset > 0 ? t / d.onset : 1;
+    tint = lerpColor(dark, drugRgb, p * 0.04);
+    glowAlpha = p * 0.03;
+  } else if (t <= (acc = d.onset) + d.comeUp) {
+    // Slowly warming up
+    const p = (t - acc) / d.comeUp;
+    tint = lerpColor(dark, drugRgb, 0.04 + p * 0.08);
+    glowAlpha = 0.03 + p * 0.07;
+  } else if (t <= (acc = d.onset + d.comeUp) + d.peak) {
+    // Peak: warmest, most color, gentle pulsing
+    const p = (t - acc) / d.peak;
+    const peakWarm = lerpColor(drugRgb, drugAccent, 0.3 + Math.sin(p * Math.PI) * 0.2);
+    tint = lerpColor(dark, peakWarm, 0.12 + Math.sin(p * Math.PI) * 0.06);
+    glowAlpha = 0.1 + Math.sin(p * Math.PI) * 0.08;
+    pulseRate = 1.5;
+  } else if (t <= (acc = d.onset + d.comeUp + d.peak) + d.offset) {
+    // Cooling down — shift toward cool blues
+    const p = (t - acc) / d.offset;
+    const cool = [30, 40, 80];
+    const from = lerpColor(dark, drugRgb, 0.12);
+    tint = lerpColor(from, lerpColor(dark, cool, 0.15), p);
+    glowAlpha = 0.1 - p * 0.06;
+  } else {
+    // After effects — very dark, desaturated
+    acc = d.onset + d.comeUp + d.peak + d.offset;
+    const p = d.afterEffects > 0 ? Math.min((t - acc) / d.afterEffects, 1) : 1;
+    const cool = [20, 20, 35];
+    tint = lerpColor(lerpColor(dark, cool, 0.1), dark, p);
+    glowAlpha = Math.max(0, 0.04 - p * 0.04);
+  }
+
+  // Add a subtle pulse during peak
+  let pulse = 0;
+  if (pulseRate > 0) {
+    pulse = Math.sin(time * pulseRate) * 0.02;
+  }
+
+  // Compute final background: radial gradient from tinted center to dark edges
+  const centerR = Math.min(255, tint[0] + Math.round(drugRgb[0] * (glowAlpha + pulse)));
+  const centerG = Math.min(255, tint[1] + Math.round(drugRgb[1] * (glowAlpha + pulse)));
+  const centerB = Math.min(255, tint[2] + Math.round(drugRgb[2] * (glowAlpha + pulse)));
+
+  overlay.style.background =
+    `radial-gradient(ellipse at 50% 45%, rgba(${centerR},${centerG},${centerB},0.95) 0%, rgba(${tint[0]},${tint[1]},${tint[2]},0.96) 50%, rgba(${dark[0]},${dark[1]},${dark[2]},0.97) 100%)`;
+}
+
+// ─── Card reactive background (hallucination intensity) ───
+function updateCardBackground(card, drug, progress, now) {
+  const d = drug.duration;
+  const total = getTotalDuration(drug);
+  const t = progress * total;
+  const time = now / 1000;
+  const visuals = drug.effects.visuals / 10; // 0–1
+
+  // How intense are hallucinations right now?
+  let intensity = 0;
+  let acc = 0;
+
+  if (t <= d.onset) {
+    intensity = 0;
+  } else if (t <= (acc = d.onset) + d.comeUp) {
+    const p = (t - acc) / d.comeUp;
+    intensity = easeInOut(p) * 0.5;
+  } else if (t <= (acc = d.onset + d.comeUp) + d.peak) {
+    const p = (t - acc) / d.peak;
+    // Peaks with a sine bulge in the middle
+    intensity = 0.5 + Math.sin(p * Math.PI) * 0.5;
+  } else if (t <= (acc = d.onset + d.comeUp + d.peak) + d.offset) {
+    const p = (t - acc) / d.offset;
+    intensity = (1 - easeInOut(p)) * 0.5;
+  } else {
+    acc = d.onset + d.comeUp + d.peak + d.offset;
+    const p = d.afterEffects > 0 ? Math.min((t - acc) / d.afterEffects, 1) : 1;
+    intensity = (1 - p) * 0.08;
+  }
+
+  // Scale by the drug's visual effect rating
+  intensity *= visuals;
+
+  // Subtle pulse during peak for high-visuals drugs
+  if (intensity > 0.3 && visuals > 0.5) {
+    intensity += Math.sin(time * 2.5) * 0.06 * visuals;
+  }
+
+  const drugRgb = hexToRgb(drug.flower.primaryColor);
+  const drugAccent = hexToRgb(drug.flower.secondaryColor);
+  const base = [26, 26, 46]; // #1a1a2e
+
+  // Blend the drug color into the card background proportional to intensity
+  const mixed = lerpColor(drugRgb, drugAccent, 0.3);
+  const glowAlpha = intensity * 0.35;
+
+  const bgR = Math.min(255, Math.round(base[0] + mixed[0] * glowAlpha));
+  const bgG = Math.min(255, Math.round(base[1] + mixed[1] * glowAlpha));
+  const bgB = Math.min(255, Math.round(base[2] + mixed[2] * glowAlpha));
+
+  // Radial glow from center, stronger at peak
+  const glowSpread = 40 + intensity * 25; // % radius
+  card.style.background =
+    `radial-gradient(ellipse at 50% 40%, rgba(${bgR},${bgG},${bgB},1) 0%, rgba(${base[0]},${base[1]},${base[2]},1) ${glowSpread}%)`;
+
+  // Also add a colored box-shadow glow for high-intensity moments
+  if (intensity > 0.15) {
+    const shadowAlpha = (intensity - 0.15) * 0.5;
+    card.style.boxShadow = `0 0 ${Math.round(intensity * 30)}px rgba(${drugRgb[0]},${drugRgb[1]},${drugRgb[2]},${shadowAlpha.toFixed(2)})`;
+  } else {
+    card.style.boxShadow = '';
+  }
+}
+
 // ─── Main flower renderer ───
 function renderFlower(g, drug, progress, isSolo, now) {
   const f = drug.flower;
@@ -783,7 +938,7 @@ function renderFlower(g, drug, progress, isSolo, now) {
 
   // Scale for grid vs solo
   const sc = isSolo ? 1.0 : 0.6;
-  const stemH = Math.min(f.stemHeight, 95) * sc * stemGrow;
+  const stemH = Math.max(f.stemHeight, 20) * sc * stemGrow;
   const petalR = f.petalRadius * sc * bloomScale;
   const centerR = f.centerSize * sc * bloomScale;
 
