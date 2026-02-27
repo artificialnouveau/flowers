@@ -651,7 +651,7 @@
     <span><b>Color</b> = drug class (warm reds/yellows: stimulants, cool blues: depressants, purples/greens: psychedelics, grays: dissociatives, dark: deliriants)</span>
     <span><b>Size</b> = intensity</span>
     <span><b>Sway</b> = body load</span>
-    <span><b>Center</b> = ego dissolution</span>
+    <span><b>Center</b> = ego dissolution (the center disc is larger and pulses more during peak for substances that dissolve the sense of self — a big, breathing center means a stronger loss of identity)</span>
     <span><b>Stem</b> = total duration</span>
     <span><b>Glow</b> = peak phase</span>
     <span><b>Background</b> = hallucination intensity (brighter = stronger visuals)</span>
@@ -2931,7 +2931,8 @@ function renderFlower(g, drug, progress, isSolo, now) {
   const sway = swayAmt * (Math.sin(time * 1.1) * 0.6 + windBase * 0.5);
 
   // Ego dissolution → center pulsation during peak
-  const egoExpand = glowOn ? (1 + (drug.effects.egoDissolve / 10) * 0.25 * (0.5 + 0.5 * Math.sin(time * 2))) : 1;
+  const egoLevel = drug.effects.egoDissolve / 10;
+  const egoExpand = glowOn ? (1 + egoLevel * 0.5 * (0.5 + 0.5 * Math.sin(time * 2.5))) : 1;
 
   // Clear and rebuild
   while (g.firstChild) g.removeChild(g.firstChild);
@@ -2972,7 +2973,10 @@ function renderFlower(g, drug, progress, isSolo, now) {
   // Flower head
   const headG = document.createElementNS(svgNS, 'g');
   const headX = sway;
-  headG.setAttribute('transform', `translate(${headX}, 0) rotate(${wiltAngle + sway * 0.5})`);
+  // Wilt: head drops downward (positive Y) and tilts slightly
+  const wiltDrop = wiltAngle * 0.5; // translate down proportional to wilt
+  const wiltTilt = wiltAngle * 0.3; // gentle tilt, not full rotation
+  headG.setAttribute('transform', `translate(${headX}, ${wiltDrop}) rotate(${wiltTilt + sway * 0.5})`);
   if (glowOn) headG.setAttribute('filter', `url(#glow-${drug.id})`);
 
   // Petals — each petal gets its own wind-driven sway, scale breathing, and bend
@@ -3008,18 +3012,23 @@ function renderFlower(g, drug, progress, isSolo, now) {
       // Bloom/wilt: spread controls how far from center each petal fans out
       // When spread=0 (bud), petals cluster tightly upward; spread=1 = full fan
       const spreadAngle = baseAngle * petalSpread;
-      // Droop: all petals rotate toward downward (90°) proportional to droop amount
-      // Petals already pointing down droop less, those pointing up droop more
-      const upwardness = -Math.cos(iRad); // 1 when pointing up, -1 when pointing down
-      const droopFactor = petalDroop * (0.4 + upwardness * 0.6);
+      // Droop: pull each petal's angle toward 180° (downward in SVG)
+      // The further a petal is from pointing down, the more it rotates toward down
+      const targetDown = 180;
+      const angleDiff = targetDown - spreadAngle;
+      // Normalize to -180..180
+      const normalizedDiff = ((angleDiff + 540) % 360) - 180;
+      const droopFactor = normalizedDiff * (petalDroop / 60);
       // Curl: shrink petals slightly to simulate curling inward
       const curlScale = Math.max(0.5, 1 + petalCurl * 0.25);
+      // Petals shrink slightly as they wilt
+      const wiltShrink = 1 - petalDroop * 0.008;
 
       const finalAngle = spreadAngle + angularWobble + windPush + droopFactor;
 
       const petalG = document.createElementNS(svgNS, 'g');
       petalG.setAttribute('transform',
-        `rotate(${finalAngle}) scale(${breathe * curlScale}, ${breathe * (1 - petalDroop * 0.005)}) skewX(${skewAmount})`);
+        `rotate(${finalAngle}) scale(${breathe * curlScale * wiltShrink}, ${breathe * wiltShrink}) skewX(${skewAmount})`);
 
       const petal = document.createElementNS(svgNS, 'path');
       petal.setAttribute('d', petalPath(f.petalShape, petalR));
@@ -3032,6 +3041,20 @@ function renderFlower(g, drug, progress, isSolo, now) {
 
   // Center disc
   if (centerR > 0.5) {
+    // Ego dissolution halo — glowing aura around center for high ego dissolve
+    if (egoLevel > 0.3 && glowOn) {
+      const haloR = centerR * egoExpand * (1.5 + egoLevel * 0.8);
+      const haloPulse = 0.5 + 0.5 * Math.sin(time * 3);
+      const haloAlpha = (egoLevel - 0.3) * 0.35 * haloPulse * colorOpacity;
+      const halo = document.createElementNS(svgNS, 'circle');
+      halo.setAttribute('cx', 0);
+      halo.setAttribute('cy', 0);
+      halo.setAttribute('r', haloR);
+      halo.setAttribute('fill', f.secondaryColor);
+      halo.setAttribute('opacity', haloAlpha);
+      headG.appendChild(halo);
+    }
+
     const outer = document.createElementNS(svgNS, 'circle');
     outer.setAttribute('cx', 0);
     outer.setAttribute('cy', 0);
