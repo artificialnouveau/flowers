@@ -141,18 +141,16 @@
     z-index: 1;
   }
 
-  .overlay .close-btn {
-    position: absolute;
-    top: 18px;
-    right: 24px;
-    font-size: 2rem;
-    background: none;
-    border: none;
-    color: #94a3b8;
+  .return-btn {
+    font-size: 0.85rem;
+    padding: 8px 16px;
+    background: #334155;
+    border: 1px solid #475569;
+    color: #e2e8f0;
+    border-radius: 6px;
     cursor: pointer;
-    line-height: 1;
   }
-  .overlay .close-btn:hover { color: #fff; }
+  .return-btn:hover { background: #475569; }
 
   .overlay svg.solo-flower {
     width: min(70vw, 420px);
@@ -314,15 +312,12 @@
 
   /* Sound toggle */
   .sound-btn {
-    position: absolute;
-    top: 18px;
-    left: 24px;
-    font-size: 1.3rem;
+    font-size: 1.1rem;
     background: #1e293b;
     border: 1px solid #334155;
     color: #94a3b8;
     cursor: pointer;
-    padding: 6px 12px;
+    padding: 8px 14px;
     border-radius: 6px;
     z-index: 2;
     transition: all 0.2s;
@@ -589,8 +584,9 @@
     }
 
     .intro { padding: 12px 14px 6px; }
-    .intro p { font-size: 0.8rem; }
+    .intro p { font-size: 0.8rem; line-height: 1.5; }
     .legend { font-size: 0.65rem; gap: 4px 10px; }
+    .legend span { white-space: normal; }
 
     .compare-bar { padding: 8px 12px; font-size: 0.75rem; gap: 8px; }
 
@@ -600,8 +596,8 @@
     .timeline-container { width: 85vw; }
     .solo-details { font-size: 0.65rem; max-width: 90vw; }
     .dose-slider-wrap { font-size: 0.65rem; }
-    .sound-btn { top: 10px; left: 10px; font-size: 1rem; padding: 4px 8px; }
-    .overlay .close-btn { top: 10px; right: 12px; font-size: 1.5rem; }
+    .sound-btn { font-size: 0.9rem; padding: 6px 10px; }
+    .return-btn { font-size: 0.75rem; padding: 6px 10px; }
 
     /* Compare overlay mobile */
     .compare-overlay { padding: 10px; }
@@ -650,8 +646,8 @@
 <div class="intro">
   <p>Each flower represents a drug's experience profile. The animation plays through onset, come-up, peak, offset, and after-effects in real-time compression (1 hour = 1 second). Click any flower to watch its full timeline.</p>
   <div class="legend">
-    <span><b>Petals</b> = cognitive complexity</span>
-    <span><b>Shape</b> = drug class (rounded: depressants/entactogens, pointed: stimulants, wavy: psychedelics, spiky: dissociatives/deliriants)</span>
+    <span><b>Petals</b> = cognitive complexity (how many distinct thought patterns, altered perceptions, and mental effects — more petals = richer, more layered headspace)</span>
+    <span><b>Shape</b> = drug class (rounded: depressants/entactogens, pointed: stimulants, wavy: psychedelics, wispy: dissociatives/deliriants)</span>
     <span><b>Color</b> = drug class (warm reds/yellows: stimulants, cool blues: depressants, purples/greens: psychedelics, grays: dissociatives, dark: deliriants)</span>
     <span><b>Size</b> = intensity</span>
     <span><b>Sway</b> = body load</span>
@@ -666,8 +662,6 @@
 
 <div class="overlay" id="overlay">
   <canvas id="hallucinationCanvas"></canvas>
-  <button class="sound-btn" id="soloSoundBtn" title="Toggle sound">&#128264;</button>
-  <button class="close-btn" id="closeOverlay">&times;</button>
   <div id="soloFlowerContainer"></div>
   <div class="solo-info">
     <h2 id="soloName"></h2>
@@ -691,6 +685,8 @@
   <div class="solo-controls">
     <button id="soloRestart">&#8634;</button>
     <button id="soloPlayPause">&#9654;</button>
+    <button class="sound-btn" id="soloSoundBtn" title="Toggle sound">&#128264;</button>
+    <button id="closeOverlay" class="return-btn">&larr; Return</button>
   </div>
 </div>
 
@@ -708,8 +704,6 @@
 
 <div class="compare-overlay" id="compareOverlay">
   <canvas id="compareCanvas"></canvas>
-  <button class="sound-btn" id="compareSoundBtn" title="Toggle sound">&#128264;</button>
-  <button class="close-btn" id="closeCompare" style="position:absolute;top:18px;right:24px;font-size:2rem;background:none;border:none;color:#94a3b8;cursor:pointer;z-index:1;">&times;</button>
   <div class="compare-flowers" id="compareFlowers"></div>
   <div class="hybrid-flower" id="hybridFlower"></div>
   <div class="compare-info">
@@ -727,6 +721,8 @@
   <div class="compare-controls">
     <button id="compareRestart">&#8634;</button>
     <button id="comparePlayPause">&#9654;</button>
+    <button class="sound-btn" id="compareSoundBtn" title="Toggle sound">&#128264;</button>
+    <button id="closeCompare" class="return-btn">&larr; Return</button>
   </div>
 </div>
 
@@ -773,13 +769,13 @@ const drugs = [
     id: "ketamine", name: "Ketamine", category: "Dissociatives", subcategory: "Dissociatives",
     duration: { onset: 0.08, comeUp: 0.17, peak: 0.75, offset: 0.5, afterEffects: 2 },
     effects: { cognitiveComplexity: 7, euphoria: 6, intensity: 8, bodyLoad: 7, egoDissolve: 8, visuals: 6 },
-    flower: { petalCount: 8, petalShape: "spiky", primaryColor: "#64748b", secondaryColor: "#38bdf8", petalRadius: 34, centerSize: 15, stemHeight: 30 }
+    flower: { petalCount: 8, petalShape: "wispy", primaryColor: "#64748b", secondaryColor: "#38bdf8", petalRadius: 34, centerSize: 15, stemHeight: 30 }
   },
   {
     id: "dxm", name: "DXM", category: "Dissociatives", subcategory: "Dissociatives",
     duration: { onset: 0.75, comeUp: 1.5, peak: 3, offset: 2, afterEffects: 6 },
     effects: { cognitiveComplexity: 7, euphoria: 5, intensity: 7, bodyLoad: 7, egoDissolve: 7, visuals: 5 },
-    flower: { petalCount: 8, petalShape: "spiky", primaryColor: "#475569", secondaryColor: "#94a3b8", petalRadius: 30, centerSize: 13, stemHeight: 90 }
+    flower: { petalCount: 8, petalShape: "wispy", primaryColor: "#475569", secondaryColor: "#94a3b8", petalRadius: 30, centerSize: 13, stemHeight: 90 }
   },
   {
     id: "mdma", name: "MDMA", category: "Entactogens", subcategory: "Entactogens",
@@ -845,13 +841,13 @@ const drugs = [
     id: "dph", name: "DPH (Diphenhydramine)", category: "Deliriants", subcategory: "Deliriants",
     duration: { onset: 0.75, comeUp: 1.5, peak: 3, offset: 2, afterEffects: 6 },
     effects: { cognitiveComplexity: 6, euphoria: 1, intensity: 7, bodyLoad: 8, egoDissolve: 5, visuals: 7 },
-    flower: { petalCount: 7, petalShape: "spiky", primaryColor: "#44403c", secondaryColor: "#78716c", petalRadius: 30, centerSize: 10, stemHeight: 90 }
+    flower: { petalCount: 7, petalShape: "wispy", primaryColor: "#44403c", secondaryColor: "#78716c", petalRadius: 30, centerSize: 10, stemHeight: 90 }
   },
   {
     id: "datura", name: "Datura", category: "Deliriants", subcategory: "Deliriants",
     duration: { onset: 1, comeUp: 2, peak: 8, offset: 6, afterEffects: 24 },
     effects: { cognitiveComplexity: 8, euphoria: 0, intensity: 10, bodyLoad: 10, egoDissolve: 9, visuals: 9 },
-    flower: { petalCount: 9, petalShape: "spiky", primaryColor: "#1c1917", secondaryColor: "#57534e", petalRadius: 42, centerSize: 16, stemHeight: 95 }
+    flower: { petalCount: 9, petalShape: "wispy", primaryColor: "#1c1917", secondaryColor: "#57534e", petalRadius: 42, centerSize: 16, stemHeight: 95 }
   }
 ];
 
@@ -869,9 +865,9 @@ const extraDrugs = [
   {"id": "sts_135", "name": "STS-135", "category": "Cannabinoids", "subcategory": "Indolecarboxamide", "duration": {"onset": 27.5, "comeUp": 0.458, "peak": 0.333, "offset": 0.125, "afterEffects": 7.104}, "effects": {"cognitiveComplexity": 3, "euphoria": 5, "intensity": 5, "bodyLoad": 3, "egoDissolve": 1, "visuals": 2}, "flower": {"petalCount": 4, "petalShape": "rounded", "primaryColor": "#86efac", "secondaryColor": "#4ade80", "petalRadius": 31, "centerSize": 5, "stemHeight": 92}},
   {"id": "thj_018", "name": "THJ-018", "category": "Cannabinoids", "subcategory": "Naphthoylindazole", "duration": {"onset": 0.125, "comeUp": 0, "peak": 1.25, "offset": 0.125, "afterEffects": 1.0}, "effects": {"cognitiveComplexity": 3, "euphoria": 5, "intensity": 6, "bodyLoad": 4, "egoDissolve": 1, "visuals": 4}, "flower": {"petalCount": 4, "petalShape": "rounded", "primaryColor": "#22c55e", "secondaryColor": "#16a34a", "petalRadius": 39, "centerSize": 5, "stemHeight": 36}},
   {"id": "thj_2201", "name": "THJ-2201", "category": "Cannabinoids", "subcategory": "Naphthoylindazole", "duration": {"onset": 0.125, "comeUp": 0, "peak": 0.625, "offset": 0, "afterEffects": 0.75}, "effects": {"cognitiveComplexity": 3, "euphoria": 6, "intensity": 7, "bodyLoad": 4, "egoDissolve": 2, "visuals": 3}, "flower": {"petalCount": 4, "petalShape": "rounded", "primaryColor": "#22c55e", "secondaryColor": "#16a34a", "petalRadius": 40, "centerSize": 6, "stemHeight": 31}},
-  {"id": "benzydamine", "name": "Benzydamine", "category": "Deliriants", "subcategory": "Indazole", "duration": {"onset": 0.667, "comeUp": 0, "peak": 4.5, "offset": 5.5, "afterEffects": 2.667}, "effects": {"cognitiveComplexity": 6, "euphoria": 2, "intensity": 10, "bodyLoad": 8, "egoDissolve": 6, "visuals": 7}, "flower": {"petalCount": 6, "petalShape": "spiky", "primaryColor": "#44403c", "secondaryColor": "#1c1917", "petalRadius": 42, "centerSize": 12, "stemHeight": 85}},
-  {"id": "mirtazapine", "name": "Mirtazapine", "category": "Deliriants", "subcategory": "Piperazinoazepine", "duration": {"onset": 0.375, "comeUp": 0, "peak": 2.25, "offset": 4.0, "afterEffects": 12.375}, "effects": {"cognitiveComplexity": 6, "euphoria": 2, "intensity": 8, "bodyLoad": 9, "egoDissolve": 5, "visuals": 8}, "flower": {"petalCount": 7, "petalShape": "spiky", "primaryColor": "#1c1917", "secondaryColor": "#78716c", "petalRadius": 42, "centerSize": 11, "stemHeight": 92}},
-  {"id": "promethazine", "name": "Promethazine", "category": "Deliriants", "subcategory": "Phenothiazine", "duration": {"onset": 0.75, "comeUp": 0.667, "peak": 1.5, "offset": 4.0, "afterEffects": 1.729}, "effects": {"cognitiveComplexity": 6, "euphoria": 2, "intensity": 6, "bodyLoad": 8, "egoDissolve": 6, "visuals": 7}, "flower": {"petalCount": 7, "petalShape": "spiky", "primaryColor": "#1c1917", "secondaryColor": "#78716c", "petalRadius": 34, "centerSize": 12, "stemHeight": 63}},
+  {"id": "benzydamine", "name": "Benzydamine", "category": "Deliriants", "subcategory": "Indazole", "duration": {"onset": 0.667, "comeUp": 0, "peak": 4.5, "offset": 5.5, "afterEffects": 2.667}, "effects": {"cognitiveComplexity": 6, "euphoria": 2, "intensity": 10, "bodyLoad": 8, "egoDissolve": 6, "visuals": 7}, "flower": {"petalCount": 6, "petalShape": "wispy", "primaryColor": "#44403c", "secondaryColor": "#1c1917", "petalRadius": 42, "centerSize": 12, "stemHeight": 85}},
+  {"id": "mirtazapine", "name": "Mirtazapine", "category": "Deliriants", "subcategory": "Piperazinoazepine", "duration": {"onset": 0.375, "comeUp": 0, "peak": 2.25, "offset": 4.0, "afterEffects": 12.375}, "effects": {"cognitiveComplexity": 6, "euphoria": 2, "intensity": 8, "bodyLoad": 9, "egoDissolve": 5, "visuals": 8}, "flower": {"petalCount": 7, "petalShape": "wispy", "primaryColor": "#1c1917", "secondaryColor": "#78716c", "petalRadius": 42, "centerSize": 11, "stemHeight": 92}},
+  {"id": "promethazine", "name": "Promethazine", "category": "Deliriants", "subcategory": "Phenothiazine", "duration": {"onset": 0.75, "comeUp": 0.667, "peak": 1.5, "offset": 4.0, "afterEffects": 1.729}, "effects": {"cognitiveComplexity": 6, "euphoria": 2, "intensity": 6, "bodyLoad": 8, "egoDissolve": 6, "visuals": 7}, "flower": {"petalCount": 7, "petalShape": "wispy", "primaryColor": "#1c1917", "secondaryColor": "#78716c", "petalRadius": 34, "centerSize": 12, "stemHeight": 63}},
   {"id": "14_butanediol", "name": "1,4-Butanediol", "category": "Depressants", "subcategory": "Alkanediol", "duration": {"onset": 0.667, "comeUp": 0, "peak": 1.5, "offset": 1.75, "afterEffects": 0.083}, "effects": {"cognitiveComplexity": 3, "euphoria": 4, "intensity": 8, "bodyLoad": 3, "egoDissolve": 1, "visuals": 1}, "flower": {"petalCount": 4, "petalShape": "rounded", "primaryColor": "#2563eb", "secondaryColor": "#60a5fa", "petalRadius": 42, "centerSize": 5, "stemHeight": 43}},
   {"id": "2m2b", "name": "2M2B", "category": "Depressants", "subcategory": "Alcohol", "duration": {"onset": 0, "comeUp": 0, "peak": 7.0, "offset": 5.0, "afterEffects": 3.0}, "effects": {"cognitiveComplexity": 3, "euphoria": 5, "intensity": 10, "bodyLoad": 3, "egoDissolve": 1, "visuals": 0}, "flower": {"petalCount": 4, "petalShape": "rounded", "primaryColor": "#3b82f6", "secondaryColor": "#6366f1", "petalRadius": 42, "centerSize": 5, "stemHeight": 92}},
   {"id": "alcohol", "name": "Alcohol", "category": "Depressants", "subcategory": "Alcohol", "duration": {"onset": 0.058, "comeUp": 0.5, "peak": 1.0, "offset": 1.375, "afterEffects": 0.317}, "effects": {"cognitiveComplexity": 3, "euphoria": 4, "intensity": 7, "bodyLoad": 3, "egoDissolve": 1, "visuals": 0}, "flower": {"petalCount": 4, "petalShape": "rounded", "primaryColor": "#6366f1", "secondaryColor": "#818cf8", "petalRadius": 41, "centerSize": 5, "stemHeight": 39}},
@@ -905,23 +901,23 @@ const extraDrugs = [
   {"id": "secobarbital", "name": "Secobarbital", "category": "Depressants", "subcategory": "Barbiturates", "duration": {"onset": 0.625, "comeUp": 0, "peak": 6.0, "offset": 3.0, "afterEffects": 2.406}, "effects": {"cognitiveComplexity": 3, "euphoria": 4, "intensity": 10, "bodyLoad": 3, "egoDissolve": 1, "visuals": 0}, "flower": {"petalCount": 4, "petalShape": "rounded", "primaryColor": "#3b82f6", "secondaryColor": "#6366f1", "petalRadius": 42, "centerSize": 5, "stemHeight": 79}},
   {"id": "temazepam", "name": "Temazepam", "category": "Depressants", "subcategory": "Benzodiazepines", "duration": {"onset": 0.75, "comeUp": 0, "peak": 0, "offset": 0, "afterEffects": 6.75}, "effects": {"cognitiveComplexity": 3, "euphoria": 4, "intensity": 6, "bodyLoad": 4, "egoDissolve": 1, "visuals": 0}, "flower": {"petalCount": 4, "petalShape": "rounded", "primaryColor": "#93c5fd", "secondaryColor": "#3b82f6", "petalRadius": 37, "centerSize": 5, "stemHeight": 58}},
   {"id": "tizanidine", "name": "Tizanidine", "category": "Depressants", "subcategory": "Imidazoline", "duration": {"onset": 0.5, "comeUp": 0, "peak": 1.5, "offset": 0, "afterEffects": 2.0}, "effects": {"cognitiveComplexity": 3, "euphoria": 4, "intensity": 7, "bodyLoad": 4, "egoDissolve": 1, "visuals": 0}, "flower": {"petalCount": 4, "petalShape": "rounded", "primaryColor": "#818cf8", "secondaryColor": "#2563eb", "petalRadius": 41, "centerSize": 5, "stemHeight": 43}},
-  {"id": "3_ho_pcp", "name": "3-HO-PCP", "category": "Dissociatives", "subcategory": "Arylcyclohexylamines", "duration": {"onset": 0, "comeUp": 1.25, "peak": 0, "offset": 0, "afterEffects": 3.75}, "effects": {"cognitiveComplexity": 7, "euphoria": 2, "intensity": 5, "bodyLoad": 7, "egoDissolve": 7, "visuals": 5}, "flower": {"petalCount": 8, "petalShape": "spiky", "primaryColor": "#64748b", "secondaryColor": "#475569", "petalRadius": 34, "centerSize": 13, "stemHeight": 47}},
-  {"id": "3_meo_pce", "name": "3-MeO-PCE", "category": "Dissociatives", "subcategory": "Arylcyclohexylamines", "duration": {"onset": 1.0, "comeUp": 1.5, "peak": 2.5, "offset": 1.5, "afterEffects": 1.625}, "effects": {"cognitiveComplexity": 7, "euphoria": 3, "intensity": 8, "bodyLoad": 6, "egoDissolve": 7, "visuals": 4}, "flower": {"petalCount": 7, "petalShape": "spiky", "primaryColor": "#475569", "secondaryColor": "#94a3b8", "petalRadius": 42, "centerSize": 13, "stemHeight": 61}},
-  {"id": "3_meo_pcmo", "name": "3-MeO-PCMo", "category": "Dissociatives", "subcategory": "Arylcyclohexylamines", "duration": {"onset": 1.5, "comeUp": 0, "peak": 2.5, "offset": 1.5, "afterEffects": 1.375}, "effects": {"cognitiveComplexity": 7, "euphoria": 3, "intensity": 8, "bodyLoad": 6, "egoDissolve": 7, "visuals": 4}, "flower": {"petalCount": 7, "petalShape": "spiky", "primaryColor": "#38bdf8", "secondaryColor": "#334155", "petalRadius": 38, "centerSize": 13, "stemHeight": 55}},
-  {"id": "3_meo_pcp", "name": "3-MeO-PCP", "category": "Dissociatives", "subcategory": "Arylcyclohexylamines", "duration": {"onset": 1.0, "comeUp": 1.375, "peak": 2.5, "offset": 1.5, "afterEffects": 1.594}, "effects": {"cognitiveComplexity": 7, "euphoria": 2, "intensity": 8, "bodyLoad": 6, "egoDissolve": 7, "visuals": 4}, "flower": {"petalCount": 7, "petalShape": "spiky", "primaryColor": "#64748b", "secondaryColor": "#475569", "petalRadius": 39, "centerSize": 13, "stemHeight": 60}},
-  {"id": "4_meo_pcp", "name": "4-MeO-PCP", "category": "Dissociatives", "subcategory": "Arylcyclohexylamines", "duration": {"onset": 1.375, "comeUp": 1.5, "peak": 5.0, "offset": 8.0, "afterEffects": 0.125}, "effects": {"cognitiveComplexity": 7, "euphoria": 2, "intensity": 10, "bodyLoad": 7, "egoDissolve": 7, "visuals": 5}, "flower": {"petalCount": 8, "petalShape": "spiky", "primaryColor": "#38bdf8", "secondaryColor": "#334155", "petalRadius": 42, "centerSize": 13, "stemHeight": 92}},
-  {"id": "diphenidine", "name": "Diphenidine", "category": "Dissociatives", "subcategory": "Diarylethylamines", "duration": {"onset": 0.375, "comeUp": 0, "peak": 0, "offset": 0, "afterEffects": 3.125}, "effects": {"cognitiveComplexity": 7, "euphoria": 2, "intensity": 5, "bodyLoad": 6, "egoDissolve": 7, "visuals": 5}, "flower": {"petalCount": 8, "petalShape": "spiky", "primaryColor": "#94a3b8", "secondaryColor": "#38bdf8", "petalRadius": 31, "centerSize": 13, "stemHeight": 40}},
-  {"id": "ephenidine", "name": "Ephenidine", "category": "Dissociatives", "subcategory": "Diarylethylamines", "duration": {"onset": 0.333, "comeUp": 0, "peak": 0, "offset": 0, "afterEffects": 5.667}, "effects": {"cognitiveComplexity": 7, "euphoria": 2, "intensity": 6, "bodyLoad": 6, "egoDissolve": 7, "visuals": 4}, "flower": {"petalCount": 8, "petalShape": "spiky", "primaryColor": "#64748b", "secondaryColor": "#475569", "petalRadius": 33, "centerSize": 13, "stemHeight": 52}},
-  {"id": "hxe", "name": "HXE", "category": "Dissociatives", "subcategory": "Arylcyclohexylamines", "duration": {"onset": 0.667, "comeUp": 0.75, "peak": 3.0, "offset": 4.5, "afterEffects": 2.229}, "effects": {"cognitiveComplexity": 7, "euphoria": 3, "intensity": 7, "bodyLoad": 7, "egoDissolve": 7, "visuals": 4}, "flower": {"petalCount": 8, "petalShape": "spiky", "primaryColor": "#475569", "secondaryColor": "#94a3b8", "petalRadius": 37, "centerSize": 13, "stemHeight": 75}},
-  {"id": "mxipr", "name": "MXiPr", "category": "Dissociatives", "subcategory": "Arylcyclohexylamines", "duration": {"onset": 0.667, "comeUp": 0, "peak": 0, "offset": 0, "afterEffects": 2.833}, "effects": {"cognitiveComplexity": 7, "euphoria": 2, "intensity": 7, "bodyLoad": 6, "egoDissolve": 7, "visuals": 6}, "flower": {"petalCount": 7, "petalShape": "spiky", "primaryColor": "#38bdf8", "secondaryColor": "#334155", "petalRadius": 41, "centerSize": 13, "stemHeight": 40}},
-  {"id": "memantine", "name": "Memantine", "category": "Dissociatives", "subcategory": "Adamantanes", "duration": {"onset": 1.75, "comeUp": 2.5, "peak": 7.5, "offset": 14.5, "afterEffects": 0.75}, "effects": {"cognitiveComplexity": 7, "euphoria": 2, "intensity": 10, "bodyLoad": 6, "egoDissolve": 8, "visuals": 4}, "flower": {"petalCount": 7, "petalShape": "spiky", "primaryColor": "#38bdf8", "secondaryColor": "#334155", "petalRadius": 42, "centerSize": 15, "stemHeight": 92}},
-  {"id": "methoxetamine", "name": "Methoxetamine", "category": "Dissociatives", "subcategory": "Arylcyclohexylamines", "duration": {"onset": 0.375, "comeUp": 1.125, "peak": 2.0, "offset": 1.25, "afterEffects": 0.25}, "effects": {"cognitiveComplexity": 7, "euphoria": 2, "intensity": 8, "bodyLoad": 7, "egoDissolve": 7, "visuals": 4}, "flower": {"petalCount": 7, "petalShape": "spiky", "primaryColor": "#64748b", "secondaryColor": "#475569", "petalRadius": 42, "centerSize": 13, "stemHeight": 47}},
-  {"id": "methoxphenidine", "name": "Methoxphenidine", "category": "Dissociatives", "subcategory": "Diarylethylamines", "duration": {"onset": 0.75, "comeUp": 0, "peak": 0, "offset": 0, "afterEffects": 6.25}, "effects": {"cognitiveComplexity": 7, "euphoria": 2, "intensity": 7, "bodyLoad": 7, "egoDissolve": 7, "visuals": 6}, "flower": {"petalCount": 7, "petalShape": "spiky", "primaryColor": "#64748b", "secondaryColor": "#475569", "petalRadius": 36, "centerSize": 13, "stemHeight": 56}},
-  {"id": "nitrous", "name": "Nitrous", "category": "Dissociatives", "subcategory": "Dissociatives", "duration": {"onset": 7.5, "comeUp": 7.5, "peak": 22.5, "offset": 0.05, "afterEffects": 9.387}, "effects": {"cognitiveComplexity": 7, "euphoria": 3, "intensity": 10, "bodyLoad": 6, "egoDissolve": 8, "visuals": 5}, "flower": {"petalCount": 7, "petalShape": "spiky", "primaryColor": "#475569", "secondaryColor": "#94a3b8", "petalRadius": 42, "centerSize": 15, "stemHeight": 92}},
-  {"id": "o_pce", "name": "O-PCE", "category": "Dissociatives", "subcategory": "Arylcyclohexylamines", "duration": {"onset": 0.5, "comeUp": 0, "peak": 0, "offset": 0, "afterEffects": 4.0}, "effects": {"cognitiveComplexity": 7, "euphoria": 3, "intensity": 7, "bodyLoad": 6, "egoDissolve": 7, "visuals": 6}, "flower": {"petalCount": 7, "petalShape": "spiky", "primaryColor": "#64748b", "secondaryColor": "#475569", "petalRadius": 38, "centerSize": 13, "stemHeight": 45}},
-  {"id": "pce", "name": "PCE", "category": "Dissociatives", "subcategory": "Arylcyclohexylamines", "duration": {"onset": 1.0, "comeUp": 1.333, "peak": 2.5, "offset": 1.5, "afterEffects": 1.583}, "effects": {"cognitiveComplexity": 7, "euphoria": 3, "intensity": 8, "bodyLoad": 6, "egoDissolve": 7, "visuals": 5}, "flower": {"petalCount": 7, "petalShape": "spiky", "primaryColor": "#94a3b8", "secondaryColor": "#38bdf8", "petalRadius": 41, "centerSize": 13, "stemHeight": 60}},
-  {"id": "pcp", "name": "PCP", "category": "Dissociatives", "subcategory": "Arylcyclohexylamines", "duration": {"onset": 1.0, "comeUp": 1.333, "peak": 2.5, "offset": 1.5, "afterEffects": 1.583}, "effects": {"cognitiveComplexity": 7, "euphoria": 3, "intensity": 8, "bodyLoad": 6, "egoDissolve": 8, "visuals": 4}, "flower": {"petalCount": 7, "petalShape": "spiky", "primaryColor": "#38bdf8", "secondaryColor": "#334155", "petalRadius": 41, "centerSize": 15, "stemHeight": 60}},
-  {"id": "rolicyclidine", "name": "Rolicyclidine", "category": "Dissociatives", "subcategory": "Arylcyclohexylamines", "duration": {"onset": 0.917, "comeUp": 1.25, "peak": 2.5, "offset": 3.5, "afterEffects": 0.833}, "effects": {"cognitiveComplexity": 7, "euphoria": 2, "intensity": 9, "bodyLoad": 7, "egoDissolve": 7, "visuals": 6}, "flower": {"petalCount": 7, "petalShape": "spiky", "primaryColor": "#94a3b8", "secondaryColor": "#38bdf8", "petalRadius": 42, "centerSize": 13, "stemHeight": 65}},
+  {"id": "3_ho_pcp", "name": "3-HO-PCP", "category": "Dissociatives", "subcategory": "Arylcyclohexylamines", "duration": {"onset": 0, "comeUp": 1.25, "peak": 0, "offset": 0, "afterEffects": 3.75}, "effects": {"cognitiveComplexity": 7, "euphoria": 2, "intensity": 5, "bodyLoad": 7, "egoDissolve": 7, "visuals": 5}, "flower": {"petalCount": 8, "petalShape": "wispy", "primaryColor": "#64748b", "secondaryColor": "#475569", "petalRadius": 34, "centerSize": 13, "stemHeight": 47}},
+  {"id": "3_meo_pce", "name": "3-MeO-PCE", "category": "Dissociatives", "subcategory": "Arylcyclohexylamines", "duration": {"onset": 1.0, "comeUp": 1.5, "peak": 2.5, "offset": 1.5, "afterEffects": 1.625}, "effects": {"cognitiveComplexity": 7, "euphoria": 3, "intensity": 8, "bodyLoad": 6, "egoDissolve": 7, "visuals": 4}, "flower": {"petalCount": 7, "petalShape": "wispy", "primaryColor": "#475569", "secondaryColor": "#94a3b8", "petalRadius": 42, "centerSize": 13, "stemHeight": 61}},
+  {"id": "3_meo_pcmo", "name": "3-MeO-PCMo", "category": "Dissociatives", "subcategory": "Arylcyclohexylamines", "duration": {"onset": 1.5, "comeUp": 0, "peak": 2.5, "offset": 1.5, "afterEffects": 1.375}, "effects": {"cognitiveComplexity": 7, "euphoria": 3, "intensity": 8, "bodyLoad": 6, "egoDissolve": 7, "visuals": 4}, "flower": {"petalCount": 7, "petalShape": "wispy", "primaryColor": "#38bdf8", "secondaryColor": "#334155", "petalRadius": 38, "centerSize": 13, "stemHeight": 55}},
+  {"id": "3_meo_pcp", "name": "3-MeO-PCP", "category": "Dissociatives", "subcategory": "Arylcyclohexylamines", "duration": {"onset": 1.0, "comeUp": 1.375, "peak": 2.5, "offset": 1.5, "afterEffects": 1.594}, "effects": {"cognitiveComplexity": 7, "euphoria": 2, "intensity": 8, "bodyLoad": 6, "egoDissolve": 7, "visuals": 4}, "flower": {"petalCount": 7, "petalShape": "wispy", "primaryColor": "#64748b", "secondaryColor": "#475569", "petalRadius": 39, "centerSize": 13, "stemHeight": 60}},
+  {"id": "4_meo_pcp", "name": "4-MeO-PCP", "category": "Dissociatives", "subcategory": "Arylcyclohexylamines", "duration": {"onset": 1.375, "comeUp": 1.5, "peak": 5.0, "offset": 8.0, "afterEffects": 0.125}, "effects": {"cognitiveComplexity": 7, "euphoria": 2, "intensity": 10, "bodyLoad": 7, "egoDissolve": 7, "visuals": 5}, "flower": {"petalCount": 8, "petalShape": "wispy", "primaryColor": "#38bdf8", "secondaryColor": "#334155", "petalRadius": 42, "centerSize": 13, "stemHeight": 92}},
+  {"id": "diphenidine", "name": "Diphenidine", "category": "Dissociatives", "subcategory": "Diarylethylamines", "duration": {"onset": 0.375, "comeUp": 0, "peak": 0, "offset": 0, "afterEffects": 3.125}, "effects": {"cognitiveComplexity": 7, "euphoria": 2, "intensity": 5, "bodyLoad": 6, "egoDissolve": 7, "visuals": 5}, "flower": {"petalCount": 8, "petalShape": "wispy", "primaryColor": "#94a3b8", "secondaryColor": "#38bdf8", "petalRadius": 31, "centerSize": 13, "stemHeight": 40}},
+  {"id": "ephenidine", "name": "Ephenidine", "category": "Dissociatives", "subcategory": "Diarylethylamines", "duration": {"onset": 0.333, "comeUp": 0, "peak": 0, "offset": 0, "afterEffects": 5.667}, "effects": {"cognitiveComplexity": 7, "euphoria": 2, "intensity": 6, "bodyLoad": 6, "egoDissolve": 7, "visuals": 4}, "flower": {"petalCount": 8, "petalShape": "wispy", "primaryColor": "#64748b", "secondaryColor": "#475569", "petalRadius": 33, "centerSize": 13, "stemHeight": 52}},
+  {"id": "hxe", "name": "HXE", "category": "Dissociatives", "subcategory": "Arylcyclohexylamines", "duration": {"onset": 0.667, "comeUp": 0.75, "peak": 3.0, "offset": 4.5, "afterEffects": 2.229}, "effects": {"cognitiveComplexity": 7, "euphoria": 3, "intensity": 7, "bodyLoad": 7, "egoDissolve": 7, "visuals": 4}, "flower": {"petalCount": 8, "petalShape": "wispy", "primaryColor": "#475569", "secondaryColor": "#94a3b8", "petalRadius": 37, "centerSize": 13, "stemHeight": 75}},
+  {"id": "mxipr", "name": "MXiPr", "category": "Dissociatives", "subcategory": "Arylcyclohexylamines", "duration": {"onset": 0.667, "comeUp": 0, "peak": 0, "offset": 0, "afterEffects": 2.833}, "effects": {"cognitiveComplexity": 7, "euphoria": 2, "intensity": 7, "bodyLoad": 6, "egoDissolve": 7, "visuals": 6}, "flower": {"petalCount": 7, "petalShape": "wispy", "primaryColor": "#38bdf8", "secondaryColor": "#334155", "petalRadius": 41, "centerSize": 13, "stemHeight": 40}},
+  {"id": "memantine", "name": "Memantine", "category": "Dissociatives", "subcategory": "Adamantanes", "duration": {"onset": 1.75, "comeUp": 2.5, "peak": 7.5, "offset": 14.5, "afterEffects": 0.75}, "effects": {"cognitiveComplexity": 7, "euphoria": 2, "intensity": 10, "bodyLoad": 6, "egoDissolve": 8, "visuals": 4}, "flower": {"petalCount": 7, "petalShape": "wispy", "primaryColor": "#38bdf8", "secondaryColor": "#334155", "petalRadius": 42, "centerSize": 15, "stemHeight": 92}},
+  {"id": "methoxetamine", "name": "Methoxetamine", "category": "Dissociatives", "subcategory": "Arylcyclohexylamines", "duration": {"onset": 0.375, "comeUp": 1.125, "peak": 2.0, "offset": 1.25, "afterEffects": 0.25}, "effects": {"cognitiveComplexity": 7, "euphoria": 2, "intensity": 8, "bodyLoad": 7, "egoDissolve": 7, "visuals": 4}, "flower": {"petalCount": 7, "petalShape": "wispy", "primaryColor": "#64748b", "secondaryColor": "#475569", "petalRadius": 42, "centerSize": 13, "stemHeight": 47}},
+  {"id": "methoxphenidine", "name": "Methoxphenidine", "category": "Dissociatives", "subcategory": "Diarylethylamines", "duration": {"onset": 0.75, "comeUp": 0, "peak": 0, "offset": 0, "afterEffects": 6.25}, "effects": {"cognitiveComplexity": 7, "euphoria": 2, "intensity": 7, "bodyLoad": 7, "egoDissolve": 7, "visuals": 6}, "flower": {"petalCount": 7, "petalShape": "wispy", "primaryColor": "#64748b", "secondaryColor": "#475569", "petalRadius": 36, "centerSize": 13, "stemHeight": 56}},
+  {"id": "nitrous", "name": "Nitrous", "category": "Dissociatives", "subcategory": "Dissociatives", "duration": {"onset": 7.5, "comeUp": 7.5, "peak": 22.5, "offset": 0.05, "afterEffects": 9.387}, "effects": {"cognitiveComplexity": 7, "euphoria": 3, "intensity": 10, "bodyLoad": 6, "egoDissolve": 8, "visuals": 5}, "flower": {"petalCount": 7, "petalShape": "wispy", "primaryColor": "#475569", "secondaryColor": "#94a3b8", "petalRadius": 42, "centerSize": 15, "stemHeight": 92}},
+  {"id": "o_pce", "name": "O-PCE", "category": "Dissociatives", "subcategory": "Arylcyclohexylamines", "duration": {"onset": 0.5, "comeUp": 0, "peak": 0, "offset": 0, "afterEffects": 4.0}, "effects": {"cognitiveComplexity": 7, "euphoria": 3, "intensity": 7, "bodyLoad": 6, "egoDissolve": 7, "visuals": 6}, "flower": {"petalCount": 7, "petalShape": "wispy", "primaryColor": "#64748b", "secondaryColor": "#475569", "petalRadius": 38, "centerSize": 13, "stemHeight": 45}},
+  {"id": "pce", "name": "PCE", "category": "Dissociatives", "subcategory": "Arylcyclohexylamines", "duration": {"onset": 1.0, "comeUp": 1.333, "peak": 2.5, "offset": 1.5, "afterEffects": 1.583}, "effects": {"cognitiveComplexity": 7, "euphoria": 3, "intensity": 8, "bodyLoad": 6, "egoDissolve": 7, "visuals": 5}, "flower": {"petalCount": 7, "petalShape": "wispy", "primaryColor": "#94a3b8", "secondaryColor": "#38bdf8", "petalRadius": 41, "centerSize": 13, "stemHeight": 60}},
+  {"id": "pcp", "name": "PCP", "category": "Dissociatives", "subcategory": "Arylcyclohexylamines", "duration": {"onset": 1.0, "comeUp": 1.333, "peak": 2.5, "offset": 1.5, "afterEffects": 1.583}, "effects": {"cognitiveComplexity": 7, "euphoria": 3, "intensity": 8, "bodyLoad": 6, "egoDissolve": 8, "visuals": 4}, "flower": {"petalCount": 7, "petalShape": "wispy", "primaryColor": "#38bdf8", "secondaryColor": "#334155", "petalRadius": 41, "centerSize": 15, "stemHeight": 60}},
+  {"id": "rolicyclidine", "name": "Rolicyclidine", "category": "Dissociatives", "subcategory": "Arylcyclohexylamines", "duration": {"onset": 0.917, "comeUp": 1.25, "peak": 2.5, "offset": 3.5, "afterEffects": 0.833}, "effects": {"cognitiveComplexity": 7, "euphoria": 2, "intensity": 9, "bodyLoad": 7, "egoDissolve": 7, "visuals": 6}, "flower": {"petalCount": 7, "petalShape": "wispy", "primaryColor": "#94a3b8", "secondaryColor": "#38bdf8", "petalRadius": 42, "centerSize": 13, "stemHeight": 65}},
   {"id": "2_fea", "name": "2-FEA", "category": "Entactogens", "subcategory": "Substituted amphetamines", "duration": {"onset": 0.167, "comeUp": 0.125, "peak": 0.75, "offset": 0.75, "afterEffects": 0.448}, "effects": {"cognitiveComplexity": 5, "euphoria": 9, "intensity": 8, "bodyLoad": 5, "egoDissolve": 4, "visuals": 1}, "flower": {"petalCount": 5, "petalShape": "rounded", "primaryColor": "#fb7185", "secondaryColor": "#fb923c", "petalRadius": 38, "centerSize": 9, "stemHeight": 35}},
   {"id": "3_fea", "name": "3-FEA", "category": "Entactogens", "subcategory": "Amphetamine", "duration": {"onset": 0.667, "comeUp": 0.75, "peak": 2.0, "offset": 2.5, "afterEffects": 1.479}, "effects": {"cognitiveComplexity": 5, "euphoria": 9, "intensity": 7, "bodyLoad": 5, "egoDissolve": 4, "visuals": 2}, "flower": {"petalCount": 5, "petalShape": "rounded", "primaryColor": "#fb7185", "secondaryColor": "#fb923c", "petalRadius": 35, "centerSize": 9, "stemHeight": 58}},
   {"id": "3_fma", "name": "3-FMA", "category": "Entactogens", "subcategory": "Amphetamine", "duration": {"onset": 0.667, "comeUp": 0.75, "peak": 3.0, "offset": 2.0, "afterEffects": 1.604}, "effects": {"cognitiveComplexity": 5, "euphoria": 9, "intensity": 10, "bodyLoad": 5, "egoDissolve": 4, "visuals": 3}, "flower": {"petalCount": 5, "petalShape": "rounded", "primaryColor": "#fb923c", "secondaryColor": "#fbbf24", "petalRadius": 42, "centerSize": 9, "stemHeight": 61}},
@@ -2237,12 +2233,12 @@ function petalPath(shape, r) {
       // Narrow but with smooth curves instead of straight lines
       return `M0,0 C${r*0.22},-${r*0.12} ${r*0.24},-${r*0.35} ${r*0.14},-${r*0.55} C${r*0.08},-${r*0.72} ${r*0.03},-${r*0.88} 0,-${r} C-${r*0.03},-${r*0.88} -${r*0.08},-${r*0.72} -${r*0.14},-${r*0.55} C-${r*0.24},-${r*0.35} -${r*0.22},-${r*0.12} 0,0Z`;
     case 'wavy': {
-      // S-curve petals with organic wobble
-      return `M0,0 C${r*0.4},-${r*0.08} ${r*0.42},-${r*0.28} ${r*0.22},-${r*0.48} C${r*0.08},-${r*0.62} ${r*0.12},-${r*0.8} 0,-${r} C-${r*0.12},-${r*0.8} -${r*0.08},-${r*0.62} -${r*0.22},-${r*0.48} C-${r*0.42},-${r*0.28} -${r*0.4},-${r*0.08} 0,0Z`;
+      // Psychedelic flowing petal — wide, organic S-curves with rounded tip
+      return `M0,0 C${r*0.5},-${r*0.1} ${r*0.52},-${r*0.3} ${r*0.35},-${r*0.45} C${r*0.18},-${r*0.58} ${r*0.28},-${r*0.72} ${r*0.15},-${r*0.85} C${r*0.08},-${r*0.94} ${r*0.02},-${r} 0,-${r} C-${r*0.02},-${r} -${r*0.08},-${r*0.94} -${r*0.15},-${r*0.85} C-${r*0.28},-${r*0.72} -${r*0.18},-${r*0.58} -${r*0.35},-${r*0.45} C-${r*0.52},-${r*0.3} -${r*0.5},-${r*0.1} 0,0Z`;
     }
-    case 'spiky':
-      // Jagged silhouette but with curved transitions (cubic spline through the points)
-      return `M0,0 C${r*0.08},-${r*0.1} ${r*0.12},-${r*0.2} ${r*0.16},-${r*0.28} C${r*0.2},-${r*0.33} ${r*0.28},-${r*0.36} ${r*0.28},-${r*0.42} C${r*0.28},-${r*0.48} ${r*0.15},-${r*0.55} ${r*0.1},-${r*0.64} C${r*0.06},-${r*0.74} ${r*0.03},-${r*0.86} 0,-${r} C-${r*0.03},-${r*0.86} -${r*0.06},-${r*0.74} -${r*0.1},-${r*0.64} C-${r*0.15},-${r*0.55} -${r*0.28},-${r*0.48} -${r*0.28},-${r*0.42} C-${r*0.28},-${r*0.36} -${r*0.2},-${r*0.33} -${r*0.16},-${r*0.28} C-${r*0.12},-${r*0.2} -${r*0.08},-${r*0.1} 0,0Z`;
+    case 'wispy':
+      // Ethereal, hollow, cloud-like — wide in middle, pinched at base and tip
+      return `M0,0 C${r*0.5},-${r*0.15} ${r*0.55},-${r*0.4} ${r*0.35},-${r*0.55} C${r*0.2},-${r*0.65} ${r*0.15},-${r*0.82} 0,-${r} C-${r*0.15},-${r*0.82} -${r*0.2},-${r*0.65} -${r*0.35},-${r*0.55} C-${r*0.55},-${r*0.4} -${r*0.5},-${r*0.15} 0,0Z`;
     default:
       return petalPath('rounded', r);
   }
@@ -2613,20 +2609,34 @@ function updateSoloBackground(drug, progress, now) {
 
   if (intensity < 0.005) return;
 
-  // ── Layer 1: Deep ambient color wash ──
-  // Slow-moving color field that shifts hue over time
-  const washHueShift = Math.sin(time * 0.3) * 0.3;
+  // ── Layer 1: Deep ambient color wash — dual moving gradients ──
+  const washHueShift = Math.sin(time * 0.3) * 0.5;
   const washColor = lerpColor(drugRgb, drugAccent, 0.5 + washHueShift);
-  const washAlpha = intensity * 0.2;
+  const washColor2 = lerpColor(drugAccent, drugRgb, 0.3 + Math.cos(time * 0.25) * 0.4);
+  const washAlpha = intensity * 0.35;
+
+  // Primary wash
   const grd = ctx.createRadialGradient(
-    W * (0.5 + Math.sin(time * 0.2) * 0.15),
-    H * (0.45 + Math.cos(time * 0.15) * 0.1),
+    W * (0.5 + Math.sin(time * 0.2) * 0.25),
+    H * (0.45 + Math.cos(time * 0.15) * 0.15),
     0,
     W * 0.5, H * 0.5, W * 0.7
   );
   grd.addColorStop(0, `rgba(${washColor[0]},${washColor[1]},${washColor[2]},${washAlpha})`);
   grd.addColorStop(1, `rgba(${dark[0]},${dark[1]},${dark[2]},0)`);
   ctx.fillStyle = grd;
+  ctx.fillRect(0, 0, W, H);
+
+  // Secondary counter-moving wash
+  const grd2 = ctx.createRadialGradient(
+    W * (0.5 - Math.sin(time * 0.17) * 0.3),
+    H * (0.55 - Math.cos(time * 0.22) * 0.2),
+    0,
+    W * 0.5, H * 0.5, W * 0.6
+  );
+  grd2.addColorStop(0, `rgba(${washColor2[0]},${washColor2[1]},${washColor2[2]},${washAlpha * 0.6})`);
+  grd2.addColorStop(1, `rgba(${dark[0]},${dark[1]},${dark[2]},0)`);
+  ctx.fillStyle = grd2;
   ctx.fillRect(0, 0, W, H);
 
   // ── Layer 2: Floating orbs with soft glow ──
@@ -2645,7 +2655,7 @@ function updateSoloBackground(drug, progress, now) {
 
     if (r < 1) continue;
 
-    const alpha = intensity * (0.15 + Math.sin(time * orb.speed + orb.phase) * 0.08);
+    const alpha = intensity * (0.25 + Math.sin(time * orb.speed + orb.phase) * 0.12);
 
     const g2 = ctx.createRadialGradient(px, py, 0, px, py, r);
     g2.addColorStop(0, `rgba(${orb.color[0]},${orb.color[1]},${orb.color[2]},${alpha})`);
@@ -2667,32 +2677,53 @@ function updateSoloBackground(drug, progress, now) {
     }
   }
 
-  // ── Layer 3: Concentric ripples during peak ──
-  if (intensity > 0.35) {
-    const rippleAlpha = (intensity - 0.35) * 0.6;
-    const numRings = Math.floor(3 + visuals * 5);
+  // ── Layer 3: Concentric ripples ──
+  if (intensity > 0.2) {
+    const rippleAlpha = (intensity - 0.2) * 0.8;
+    const numRings = Math.floor(4 + visuals * 8);
     ctx.globalCompositeOperation = 'screen';
     for (let i = 0; i < numRings; i++) {
-      const ringPhase = time * 0.6 + i * 0.7;
-      const ringProgress = (ringPhase % 3) / 3; // 0→1 over 3 seconds
-      const ringR = ringProgress * W * 0.6;
+      const ringPhase = time * 0.8 + i * 0.5;
+      const ringProgress = (ringPhase % 3) / 3;
+      const ringR = ringProgress * W * 0.7;
       const ringFade = 1 - ringProgress;
 
       ctx.beginPath();
       ctx.arc(W * 0.5, H * 0.45, ringR, 0, Math.PI * 2);
-      ctx.strokeStyle = `rgba(${drugAccent[0]},${drugAccent[1]},${drugAccent[2]},${rippleAlpha * ringFade * 0.25})`;
-      ctx.lineWidth = 1.5 + intensity * 3;
+      const ringColor = lerpColor(drugRgb, drugAccent, (i / numRings + Math.sin(time * 0.4)) * 0.5 + 0.25);
+      ctx.strokeStyle = `rgba(${ringColor[0]},${ringColor[1]},${ringColor[2]},${rippleAlpha * ringFade * 0.35})`;
+      ctx.lineWidth = 2 + intensity * 4;
       ctx.stroke();
     }
   }
 
-  // ── Layer 4: Geometric patterns during high peak ──
-  if (intensity > 0.55 && visuals > 0.4) {
-    const geoAlpha = (intensity - 0.55) * 0.8 * visuals;
+  // ── Layer 3b: Flowing color trails (psychedelic streaks) ──
+  if (intensity > 0.25 && visuals > 0.3) {
+    const trailAlpha = (intensity - 0.25) * visuals * 0.4;
+    ctx.globalCompositeOperation = 'screen';
+    for (let t2 = 0; t2 < 6; t2++) {
+      const trailPhase = t2 * 1.05 + time * 0.4;
+      const cx2 = W * (0.3 + 0.4 * Math.sin(trailPhase * 0.7));
+      const cy2 = H * (0.3 + 0.4 * Math.cos(trailPhase * 0.5));
+      const trailColor = lerpColor(drugRgb, drugAccent, (t2 / 6 + Math.sin(time * 0.3 + t2)) * 0.5 + 0.25);
+      const trailR = 30 + intensity * 80 + Math.sin(time * 1.2 + t2) * 20;
+
+      const tg = ctx.createRadialGradient(cx2, cy2, 0, cx2, cy2, trailR);
+      tg.addColorStop(0, `rgba(${trailColor[0]},${trailColor[1]},${trailColor[2]},${trailAlpha * 0.5})`);
+      tg.addColorStop(0.6, `rgba(${trailColor[0]},${trailColor[1]},${trailColor[2]},${trailAlpha * 0.15})`);
+      tg.addColorStop(1, `rgba(${trailColor[0]},${trailColor[1]},${trailColor[2]},0)`);
+      ctx.fillStyle = tg;
+      ctx.fillRect(cx2 - trailR, cy2 - trailR, trailR * 2, trailR * 2);
+    }
+  }
+
+  // ── Layer 4: Geometric patterns ──
+  if (intensity > 0.35 && visuals > 0.3) {
+    const geoAlpha = (intensity - 0.35) * 1.2 * visuals;
     const cx = W * 0.5;
     const cy = H * 0.45;
     const sides = drug.flower.petalCount;
-    const layers = 3 + Math.floor(visuals * 4);
+    const layers = 4 + Math.floor(visuals * 6);
 
     ctx.globalCompositeOperation = 'screen';
 
@@ -2718,8 +2749,8 @@ function updateSoloBackground(drug, progress, now) {
     }
 
     // Connecting lines between layers (sacred geometry feel)
-    if (intensity > 0.7 && visuals > 0.6) {
-      const connectAlpha = (intensity - 0.7) * visuals * 0.12;
+    if (intensity > 0.5 && visuals > 0.4) {
+      const connectAlpha = (intensity - 0.5) * visuals * 0.18;
       for (let i = 0; i < sides; i++) {
         const angle = (Math.PI * 2 / sides) * i + time * 0.2;
         const x1 = cx + Math.cos(angle) * 40;
@@ -2828,44 +2859,64 @@ function renderFlower(g, drug, progress, isSolo, now) {
 
   let acc = 0;
 
-  // Phase: Onset
+  // petalSpread: 0 = closed bud, 1 = fully open, controls petal fan-out angle
+  let petalSpread = 0;
+  // petalDroop: extra downward rotation per petal during wilting
+  let petalDroop = 0;
+  // petalCurl: petals curl inward (negative) or outward (positive)
+  let petalCurl = 0;
+
+  // Phase: Onset — seed/bud, stem just starting
   if (t <= d.onset) {
     const p = d.onset > 0 ? easeInOut(t / d.onset) : 1;
-    stemGrow = p * 0.25;
-    bloomScale = p * 0.04;
+    stemGrow = p * 0.3;
+    bloomScale = p * 0.08;
+    petalSpread = 0; // tight bud
+    colorOpacity = 0.4 + p * 0.3;
   }
-  // Phase: Come Up
+  // Phase: Come Up — petals unfurling, bloom opening
   else if (t <= (acc = d.onset) + d.comeUp) {
     const p = d.comeUp > 0 ? easeInOut((t - acc) / d.comeUp) : 1;
-    stemGrow = 0.25 + p * 0.5;
-    bloomScale = 0.04 + p * 0.5;
+    stemGrow = 0.3 + p * 0.5;
+    bloomScale = 0.08 + p * 0.55;
+    petalSpread = p; // petals fan open from 0 to 1
+    petalCurl = -0.3 * (1 - p); // slight inward curl at start, opening out
+    colorOpacity = 0.7 + p * 0.3;
   }
-  // Phase: Peak
+  // Phase: Peak — full bloom, vibrant, alive
   else if (t <= (acc = d.onset + d.comeUp) + d.peak) {
     const p = d.peak > 0 ? (t - acc) / d.peak : 1;
-    stemGrow = 0.75 + p * 0.25;
-    bloomScale = 0.54 + easeInOut(p) * 0.46;
+    stemGrow = 0.8 + easeInOut(p) * 0.2;
+    bloomScale = 0.63 + easeInOut(p) * 0.37;
+    petalSpread = 1;
+    petalCurl = 0.15 * Math.sin(p * Math.PI); // gentle outward bow at mid-peak
     glowOn = true;
     if (drug.effects.visuals > 4) {
       opacityPulse = 0.88 + Math.sin(time * (drug.effects.visuals * 0.7)) * 0.12;
     }
   }
-  // Phase: Offset
+  // Phase: Offset — wilting begins, petals drooping and closing
   else if (t <= (acc = d.onset + d.comeUp + d.peak) + d.offset) {
     const p = d.offset > 0 ? easeInOut((t - acc) / d.offset) : 1;
-    stemGrow = 1 - p * 0.15;
-    bloomScale = 1 - p * 0.35;
-    colorOpacity = 1 - p * 0.25;
-    wiltAngle = p * 12;
+    stemGrow = 1 - p * 0.2;
+    bloomScale = 1 - p * 0.3;
+    petalSpread = 1 - p * 0.3; // petals start closing slightly
+    petalDroop = p * 15; // petals droop gently
+    petalCurl = -p * 0.3; // slight curl inward
+    colorOpacity = 1 - p * 0.35;
+    wiltAngle = p * 8;
   }
-  // Phase: After Effects
+  // Phase: After Effects — full wilt, flower fading
   else {
     acc = d.onset + d.comeUp + d.peak + d.offset;
     const p = d.afterEffects > 0 ? easeInOut(Math.min((t - acc) / d.afterEffects, 1)) : 1;
-    stemGrow = 0.85 - p * 0.35;
-    bloomScale = 0.65 - p * 0.4;
-    colorOpacity = 0.75 - p * 0.45;
-    wiltAngle = 12 + p * 28;
+    stemGrow = 0.8 - p * 0.35;
+    bloomScale = 0.7 - p * 0.35;
+    petalSpread = 0.7 - p * 0.4; // closing
+    petalDroop = 15 + p * 25; // increasing droop
+    petalCurl = -0.3 - p * 0.4; // curling in
+    colorOpacity = 0.65 - p * 0.45;
+    wiltAngle = 8 + p * 12;
   }
 
   // Scale for grid vs solo
@@ -2927,9 +2978,9 @@ function renderFlower(g, drug, progress, isSolo, now) {
   // Petals — each petal gets its own wind-driven sway, scale breathing, and bend
   if (petalR > 1) {
     // Wind: a slow directional drift + faster gusts, shared across petals
-    const windDir = Math.sin(time * 0.4) * 0.6;           // slow wind direction shift
-    const windGust = Math.sin(time * 2.3) * 0.3;          // faster gusts
-    const windStrength = 0.5 + 0.5 * Math.sin(time * 0.7); // overall wind intensity
+    const windDir = Math.sin(time * 0.4) * 1.2;             // slow wind direction shift
+    const windGust = Math.sin(time * 2.3) * 0.7;            // faster gusts
+    const windStrength = 0.6 + 0.4 * Math.sin(time * 0.7);  // overall wind intensity
 
     for (let i = 0; i < f.petalCount; i++) {
       const baseAngle = (360 / f.petalCount) * i;
@@ -2939,26 +2990,36 @@ function renderFlower(g, drug, progress, isSolo, now) {
       const phase = i * 1.17 + drug.id.length * 0.3;
 
       // Gentle angular wobble (wind catching each petal differently)
-      const angularWobble = (Math.sin(time * 1.4 + phase) * 2.5
-                           + Math.sin(time * 2.8 + phase * 1.3) * 1.2)
+      const angularWobble = (Math.sin(time * 1.4 + phase) * 5.0
+                           + Math.sin(time * 2.8 + phase * 1.3) * 2.5)
                            * windStrength;
 
       // Petals facing the wind direction sway more
       const windAlignment = Math.cos(iRad - windDir);
-      const windPush = windAlignment * (windGust + windDir) * 3.0 * windStrength;
+      const windPush = windAlignment * (windGust + windDir) * 5.0 * windStrength;
 
-      // Subtle breathing scale per petal (each slightly out of phase)
-      const breathe = 1 + Math.sin(time * 1.1 + phase * 0.8) * 0.04
-                        + Math.sin(time * 2.5 + phase * 1.5) * 0.02;
+      // Breathing scale per petal (each slightly out of phase)
+      const breathe = 1 + Math.sin(time * 1.1 + phase * 0.8) * 0.07
+                        + Math.sin(time * 2.5 + phase * 1.5) * 0.04;
 
-      // Slight skew to simulate the petal bending in wind
-      const skewAmount = windAlignment * windStrength * 2.5 * Math.sin(time * 1.6 + phase);
+      // Skew to simulate the petal bending in wind
+      const skewAmount = windAlignment * windStrength * 5.0 * Math.sin(time * 1.6 + phase);
 
-      const finalAngle = baseAngle + angularWobble + windPush;
+      // Bloom/wilt: spread controls how far from center each petal fans out
+      // When spread=0 (bud), petals cluster tightly upward; spread=1 = full fan
+      const spreadAngle = baseAngle * petalSpread;
+      // Droop: all petals rotate toward downward (90°) proportional to droop amount
+      // Petals already pointing down droop less, those pointing up droop more
+      const upwardness = -Math.cos(iRad); // 1 when pointing up, -1 when pointing down
+      const droopFactor = petalDroop * (0.4 + upwardness * 0.6);
+      // Curl: shrink petals slightly to simulate curling inward
+      const curlScale = Math.max(0.5, 1 + petalCurl * 0.25);
+
+      const finalAngle = spreadAngle + angularWobble + windPush + droopFactor;
 
       const petalG = document.createElementNS(svgNS, 'g');
       petalG.setAttribute('transform',
-        `rotate(${finalAngle}) scale(${breathe}) skewX(${skewAmount})`);
+        `rotate(${finalAngle}) scale(${breathe * curlScale}, ${breathe * (1 - petalDroop * 0.005)}) skewX(${skewAmount})`);
 
       const petal = document.createElementNS(svgNS, 'path');
       petal.setAttribute('d', petalPath(f.petalShape, petalR));
