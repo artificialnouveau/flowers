@@ -2763,32 +2763,47 @@ const AudioEngine = (() => {
     } catch(e) {}
   }
 
-  // Ensure a fresh, unlocked AudioContext exists. Call once per gesture.
-  function ensureFreshCtx() {
+  // Prepare a fresh AudioContext. Returns the resume promise.
+  // Must be called synchronously inside a user gesture (so iOS registers it).
+  function prepareFreshCtx() {
     if (ctx) {
       try { Object.keys(nodes).forEach(k => stop(k)); } catch(e) {}
       try { ctx.close(); } catch(e) {}
       ctx = null; masterGain = null; breatheGain = null; nodes = {};
     }
-    getCtx();
-    unlockCtx();
+    // Create new context synchronously (gesture registration)
+    ctx = new (window.AudioContext || window.webkitAudioContext)();
+    breatheGain = ctx.createGain();
+    breatheGain.gain.value = 1;
+    breatheGain.connect(ctx.destination);
+    masterGain = ctx.createGain();
+    masterGain.gain.value = 0;
+    masterGain.connect(breatheGain);
+    // Call resume synchronously (gesture registration) — returns promise
+    return ctx.resume();
   }
 
-  // Rebuild audio from scratch — call synchronously from user gesture handler.
+  // Rebuild audio. Oscillators are started AFTER ctx.resume() resolves,
+  // because on iOS oscillators started on a suspended context are permanently silent.
   function restart(drug, prefix = 'solo') {
-    ensureFreshCtx();
-    buildGraph(drug, prefix);
-    active = true;
-    masterGain.gain.value = 0.8;
+    const p = prepareFreshCtx();
+    p.then(() => {
+      unlockCtx();
+      buildGraph(drug, prefix);
+      active = true;
+      masterGain.gain.value = 0.8;
+    });
   }
 
-  // Rebuild dual audio (compare mode) — single fresh context for both drugs.
   function restartDual(drug1, drug2) {
-    ensureFreshCtx();
-    buildGraph(drug1, 'comp0');
-    buildGraph(drug2, 'comp1');
-    active = true;
-    masterGain.gain.value = 0.7;
+    const p = prepareFreshCtx();
+    p.then(() => {
+      unlockCtx();
+      buildGraph(drug1, 'comp0');
+      buildGraph(drug2, 'comp1');
+      active = true;
+      masterGain.gain.value = 0.7;
+    });
   }
 
   function isMuted() { return muted; }
@@ -2963,7 +2978,7 @@ const AudioEngine = (() => {
     n.tinnitusOsc.frequency.setTargetAtTime(8200 + ego * 2000, t, ramp); // higher pitch with more ego dissolution
   }
 
-  // Debug: toggleMute + restart with full state logging for iOS diagnosis
+  // Debug: toggleMute + restart with state logging — starts oscillators AFTER resume
   function debugRestart(drug, prefix) {
     const log = [];
     try {
@@ -2976,65 +2991,56 @@ const AudioEngine = (() => {
 
         // Nuke old context
         if (ctx) {
-          try { Object.keys(nodes).forEach(k => stop(k)); } catch(e) { log.push('stop err: ' + e.message); }
-          try { ctx.close(); } catch(e) { log.push('close err: ' + e.message); }
+          try { Object.keys(nodes).forEach(k => stop(k)); } catch(e) {}
+          try { ctx.close(); } catch(e) {}
           ctx = null; masterGain = null; breatheGain = null; nodes = {};
         }
 
-        // Create fresh
+        // Create fresh context
         log.push('4. creating AudioContext...');
         ctx = new (window.AudioContext || window.webkitAudioContext)();
-        log.push('5. ctx.state=' + ctx.state + ' sampleRate=' + ctx.sampleRate);
+        log.push('5. ctx.state=' + ctx.state);
 
-        // Resume synchronously
-        const p = ctx.resume();
-        log.push('6. resume() called, state=' + ctx.state);
-
-        // Master gain chain
+        // Master gain chain (no oscillators yet!)
         breatheGain = ctx.createGain();
         breatheGain.gain.value = 1;
         breatheGain.connect(ctx.destination);
         masterGain = ctx.createGain();
         masterGain.gain.value = 0.8;
         masterGain.connect(breatheGain);
-        log.push('7. masterGain.value=' + masterGain.gain.value);
 
-        // Unlock with silent buffer
-        const buf = ctx.createBuffer(1, 1, 22050);
-        const src = ctx.createBufferSource();
-        src.buffer = buf;
-        src.connect(ctx.destination);
-        src.start(0);
-        log.push('8. silent buffer played');
+        // Resume — WAIT for it to resolve before starting oscillators
+        const p = ctx.resume();
+        log.push('6. resume() called, state=' + ctx.state);
 
-        // Simple test tone instead of full graph
-        const testOsc = ctx.createOscillator();
-        testOsc.type = 'sine';
-        testOsc.frequency.value = 440;
-        const testGain = ctx.createGain();
-        testGain.gain.value = 0.3;
-        testOsc.connect(testGain);
-        testGain.connect(masterGain);
-        testOsc.start();
-        testOsc.stop(ctx.currentTime + 2);
-        log.push('9. test tone 440Hz started, ctx.state=' + ctx.state);
-
-        // Also build full graph
-        try {
-          buildGraph(drug, prefix);
-          active = true;
-          log.push('10. buildGraph ok, nodes=' + Object.keys(nodes).join(','));
-        } catch(e) {
-          log.push('10. buildGraph FAILED: ' + e.message);
-        }
-
-        // Check resume promise
         p.then(() => {
-          log.push('11. resume resolved, state=' + ctx.state);
+          log.push('7. resume RESOLVED, state=' + ctx.state);
+
+          // NOW start test tone (context is running)
+          const testOsc = ctx.createOscillator();
+          testOsc.type = 'sine';
+          testOsc.frequency.value = 440;
+          const testGain = ctx.createGain();
+          testGain.gain.value = 0.5;
+          testOsc.connect(testGain);
+          testGain.connect(masterGain);
+          testOsc.start();
+          testOsc.stop(ctx.currentTime + 2);
+          log.push('8. test tone started, ctx.state=' + ctx.state);
+
+          // Build full graph
+          try {
+            buildGraph(drug, prefix);
+            active = true;
+            log.push('9. buildGraph ok');
+          } catch(e) {
+            log.push('9. buildGraph FAILED: ' + e.message);
+          }
+
           const el = document.getElementById('audioDebug');
           if (el) el.textContent = log.join('\n');
         }).catch(e => {
-          log.push('11. resume REJECTED: ' + e.message);
+          log.push('7. resume REJECTED: ' + e.message);
           const el = document.getElementById('audioDebug');
           if (el) el.textContent = log.join('\n');
         });
