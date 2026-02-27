@@ -1322,12 +1322,12 @@ function setupOverlay() {
     if (e.key === 'm' && soloState) { AudioEngine.toggleMute(); updateSoundBtn('soloSoundBtn'); }
   });
 
-  document.getElementById('soloSoundBtn').addEventListener('click', () => {
+  document.getElementById('soloSoundBtn').addEventListener('click', async () => {
     AudioEngine.toggleMute();
-    // On mobile, oscillators started on a suspended AudioContext may be broken.
-    // Rebuild the entire audio graph inside this tap handler.
+    // On mobile (iOS), we must await restart() so the AudioContext fully resumes
+    // before oscillators are started — otherwise they are permanently silent.
     if (!AudioEngine.isMuted() && soloState) {
-      try { AudioEngine.restart(soloState.drug, 'solo'); } catch(e) {}
+      try { await AudioEngine.restart(soloState.drug, 'solo'); } catch(e) {}
     }
     updateSoundBtn('soloSoundBtn');
   });
@@ -2015,13 +2015,12 @@ function setupCompareMode() {
     compareState.scrubbing = false;
   });
 
-  document.getElementById('compareSoundBtn').addEventListener('click', () => {
+  document.getElementById('compareSoundBtn').addEventListener('click', async () => {
     AudioEngine.toggleMute();
-    // On mobile, rebuild audio graph inside this tap handler
     if (!AudioEngine.isMuted() && compareState) {
       try {
-        AudioEngine.restart(compareState.drugs[0], 'comp0');
-        AudioEngine.restart(compareState.drugs[1], 'comp1');
+        await AudioEngine.restart(compareState.drugs[0], 'comp0');
+        await AudioEngine.restart(compareState.drugs[1], 'comp1');
       } catch(e) {}
     }
     updateSoundBtn('compareSoundBtn');
@@ -2659,20 +2658,25 @@ const AudioEngine = (() => {
   }
 
   function start(drug, prefix = 'solo') {
+    // On mobile/iOS, defer AudioContext creation to the sound button tap.
+    // Creating it here (muted) wastes the user gesture and the context may
+    // auto-suspend before the user actually wants sound.
+    if (muted) return;
     getCtx();
     if (nodes[prefix]) stop(prefix);
     buildGraph(drug, prefix);
     active = true;
-    if (!muted) masterGain.gain.setTargetAtTime(0.8, ctx.currentTime, 0.3);
+    masterGain.gain.setTargetAtTime(0.8, ctx.currentTime, 0.3);
   }
 
   function startDual(drug1, drug2) {
+    if (muted) return;
     getCtx();
     stop('comp0'); stop('comp1');
     buildGraph(drug1, 'comp0');
     buildGraph(drug2, 'comp1');
     active = true;
-    if (!muted) masterGain.gain.setTargetAtTime(0.7, ctx.currentTime, 0.3);
+    masterGain.gain.setTargetAtTime(0.7, ctx.currentTime, 0.3);
   }
 
   function stop(prefix) {
@@ -2693,26 +2697,34 @@ const AudioEngine = (() => {
 
   function toggleMute() {
     muted = !muted;
-    // On mobile, AudioContext must be created/resumed inside a direct user gesture.
-    // If no context exists yet, create it now (inside the tap handler).
-    const wasNew = !ctx;
+    // On iOS, AudioContext must be created/resumed synchronously inside user gesture.
+    // Create ctx here so the gesture is registered, even if we await later.
     if (!ctx) getCtx();
-    // Always attempt resume — on iOS this only works inside a gesture handler
-    const resumePromise = ctx.state === 'suspended' ? ctx.resume() : Promise.resolve();
-    resumePromise.then(() => {
-      masterGain.gain.setTargetAtTime(muted ? 0 : 0.8, ctx.currentTime, 0.3);
-    });
+    if (muted && ctx && masterGain) {
+      masterGain.gain.setTargetAtTime(0, ctx.currentTime, 0.1);
+    }
     return muted;
   }
 
-  // Force-rebuild audio graph (for mobile: call from user gesture after unmuting)
-  function restart(drug, prefix = 'solo') {
+  // Force-rebuild audio graph (for mobile: call from user gesture after unmuting).
+  // MUST be called with await — waits for AudioContext to actually resume before
+  // starting oscillators, which is required on iOS.
+  async function restart(drug, prefix = 'solo') {
+    // If old context is closed/broken, nuke it
+    if (ctx && ctx.state === 'closed') {
+      ctx = null; masterGain = null; breatheGain = null; nodes = {};
+    }
+    // Create context synchronously (registers user gesture on iOS)
     if (!ctx) getCtx();
-    if (ctx.state === 'suspended') ctx.resume();
+    // CRITICAL: await resume before starting any oscillators.
+    // On iOS, oscillators started on a suspended context are permanently silent.
+    if (ctx.state === 'suspended') {
+      try { await ctx.resume(); } catch(e) {}
+    }
     if (nodes[prefix]) stop(prefix);
     buildGraph(drug, prefix);
     active = true;
-    if (!muted) masterGain.gain.setTargetAtTime(0.8, ctx.currentTime, 0.3);
+    masterGain.gain.setTargetAtTime(0.8, ctx.currentTime, 0.05);
   }
 
   function isMuted() { return muted; }
