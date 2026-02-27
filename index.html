@@ -3714,83 +3714,78 @@ function renderFlower(g, drug, progress, isSolo, now) {
   // petalCurl: petals curl inward (negative) or outward (positive)
   let petalCurl = 0;
 
-  // Compute a single smooth master progress (0–1 across entire lifecycle)
-  // then derive all animation variables from it, avoiding per-phase easing
-  // that creates stop-start stutter at phase boundaries.
+  // Keyframe-based interpolation — handles zero-duration phases gracefully.
+  // Each keyframe defines animation values at a phase boundary.
+  // When a phase has zero duration, its keyframes collapse to the same position
+  // and the interpolation smoothly bridges across them.
+
+  const smoothstep = (x) => x * x * (3 - 2 * x);
 
   // Phase boundary positions as fractions of total duration
+  // For zero-duration phases, consecutive boundaries share the same position.
   const pOnset = d.onset / total;
   const pComeUp = (d.onset + d.comeUp) / total;
   const pPeak = (d.onset + d.comeUp + d.peak) / total;
   const pOffset = (d.onset + d.comeUp + d.peak + d.offset) / total;
-  // pAfter = 1.0
 
-  // Smooth helper: remap a value within a range to 0–1, clamped
-  const remap = (val, lo, hi) => Math.max(0, Math.min(1, (val - lo) / (hi - lo || 0.001)));
+  // Keyframes: [progress, bloomScale, stemGrow, petalSpread, petalCurl, petalDroop, colorOpacity, wiltAngle, glowAmt]
+  const keyframes = [
+    // Start (seed)
+    { p: 0,       bloom: 0,    stem: 0,    spread: 0,   curl: -0.4, droop: 0,  opacity: 0.3,  wilt: 0, glow: 0 },
+    // End of onset (bud visible)
+    { p: pOnset,  bloom: 0.2,  stem: 0.35, spread: 0.05, curl: -0.4, droop: 0,  opacity: 0.65, wilt: 0, glow: 0 },
+    // End of come-up (nearly open)
+    { p: pComeUp, bloom: 0.63, stem: 0.8,  spread: 1,   curl: 0,    droop: 0,  opacity: 1,    wilt: 0, glow: 0.5 },
+    // Mid-peak (full bloom)
+    { p: pComeUp + (pPeak - pComeUp) * 0.5, bloom: 0.85, stem: 0.9, spread: 1, curl: 0.15, droop: 0, opacity: 1, wilt: 0, glow: 1 },
+    // End of peak
+    { p: pPeak,   bloom: 1,    stem: 1,    spread: 1,   curl: 0,    droop: 0,  opacity: 1,    wilt: 0, glow: 0.5 },
+    // End of offset (wilting)
+    { p: pOffset, bloom: 0.7,  stem: 0.8,  spread: 0.7, curl: -0.3, droop: 15, opacity: 0.65, wilt: 8, glow: 0 },
+    // End (faded)
+    { p: 1,       bloom: 0.35, stem: 0.45, spread: 0.3, curl: -0.7, droop: 40, opacity: 0,    wilt: 20, glow: 0 },
+  ];
 
-  // bloomScale: 0→0.2 (onset), 0.2→0.63 (come-up), 0.63→1.0 (peak), 1.0→0.7 (offset), 0.7→0.35 (after)
-  // Use smoothstep (cubic hermite) for the overall lifecycle curve
-  const smoothstep = (x) => x * x * (3 - 2 * x);
-
-  if (progress <= pOnset) {
-    const p = remap(progress, 0, pOnset);
-    const sp = smoothstep(p);
-    stemGrow = sp * 0.35;
-    bloomScale = sp * 0.2;
-    petalSpread = sp * 0.05;
-    petalCurl = -0.4;
-    colorOpacity = 0.3 + sp * 0.35;
-  } else if (progress <= pComeUp) {
-    const p = remap(progress, pOnset, pComeUp);
-    const sp = smoothstep(p);
-    stemGrow = 0.35 + sp * 0.45;
-    bloomScale = 0.2 + sp * 0.43;
-    petalSpread = 0.05 + sp * 0.95;
-    petalCurl = -0.4 + sp * 0.4;
-    colorOpacity = 0.65 + sp * 0.35;
-    // Glow fades in during late come-up
-    glowAmt = smoothstep(Math.max(0, (p - 0.5) * 2)) * 0.5;
-    if (drug.effects.visuals > 4) {
-      const pulseRamp = smoothstep(Math.max(0, (p - 0.6) / 0.4));
-      opacityPulse = 1 - pulseRamp * 0.06 * (1 - Math.sin(time * (drug.effects.visuals * 0.7)));
+  // Remove duplicate-position keyframes (from zero-duration phases) keeping last value
+  const kf = [];
+  for (let i = 0; i < keyframes.length; i++) {
+    if (kf.length > 0 && Math.abs(keyframes[i].p - kf[kf.length - 1].p) < 0.0001) {
+      kf[kf.length - 1] = keyframes[i]; // overwrite with later keyframe
+    } else {
+      kf.push(keyframes[i]);
     }
-  } else if (progress <= pPeak) {
-    const p = remap(progress, pComeUp, pPeak);
-    stemGrow = 0.8 + smoothstep(p) * 0.2;
-    bloomScale = 0.63 + smoothstep(p) * 0.37;
-    petalSpread = 1;
-    petalCurl = 0.15 * Math.sin(p * Math.PI);
-    glowAmt = 0.5 + 0.5 * Math.sin(p * Math.PI);
-    if (drug.effects.visuals > 4) {
-      opacityPulse = 0.88 + Math.sin(time * (drug.effects.visuals * 0.7)) * 0.12;
-    }
-  } else if (progress <= pOffset) {
-    const p = remap(progress, pPeak, pOffset);
-    const sp = smoothstep(p);
-    stemGrow = 1 - sp * 0.2;
-    bloomScale = 1 - sp * 0.3;
-    petalSpread = 1 - sp * 0.3;
-    petalDroop = sp * 15;
-    petalCurl = -sp * 0.3;
-    colorOpacity = 1 - sp * 0.35;
-    wiltAngle = sp * 8;
-    // Glow fades out during early offset
-    glowAmt = 0.5 * (1 - smoothstep(Math.min(p / 0.4, 1)));
-    if (drug.effects.visuals > 4) {
-      const pulseRamp = 1 - smoothstep(Math.min(p / 0.3, 1));
-      opacityPulse = 1 - pulseRamp * 0.06 * (1 - Math.sin(time * (drug.effects.visuals * 0.7)));
-    }
-  } else {
-    const p = remap(progress, pOffset, 1);
-    const sp = smoothstep(p);
-    stemGrow = 0.8 - sp * 0.35;
-    bloomScale = 0.7 - sp * 0.35;
-    petalSpread = 0.7 - sp * 0.4;
-    petalDroop = 15 + sp * 25;
-    petalCurl = -0.3 - sp * 0.4;
-    colorOpacity = 0.65 * (1 - sp);
-    wiltAngle = 8 + sp * 12;
   }
+
+  // Find the two surrounding keyframes and interpolate
+  let k0 = kf[0], k1 = kf[kf.length - 1];
+  for (let i = 0; i < kf.length - 1; i++) {
+    if (progress >= kf[i].p && progress <= kf[i + 1].p) {
+      k0 = kf[i];
+      k1 = kf[i + 1];
+      break;
+    }
+  }
+
+  const span = k1.p - k0.p;
+  const rawT = span > 0.0001 ? (progress - k0.p) / span : 1;
+  const st = smoothstep(Math.max(0, Math.min(1, rawT)));
+
+  const lerp = (a, b) => a + (b - a) * st;
+  bloomScale = lerp(k0.bloom, k1.bloom);
+  stemGrow = lerp(k0.stem, k1.stem);
+  petalSpread = lerp(k0.spread, k1.spread);
+  petalCurl = lerp(k0.curl, k1.curl);
+  petalDroop = lerp(k0.droop, k1.droop);
+  colorOpacity = lerp(k0.opacity, k1.opacity);
+  wiltAngle = lerp(k0.wilt, k1.wilt);
+  glowAmt = lerp(k0.glow, k1.glow);
+
+  // Opacity pulse for high-visual drugs during glow
+  if (drug.effects.visuals > 4 && glowAmt > 0.05) {
+    const pulseStrength = glowAmt * 0.12;
+    opacityPulse = 1 - pulseStrength + Math.sin(time * (drug.effects.visuals * 0.7)) * pulseStrength;
+  }
+
   const glowOn = glowAmt > 0.05;
 
   // Scale for grid vs solo
@@ -3804,19 +3799,37 @@ function renderFlower(g, drug, progress, isSolo, now) {
   const swayAmt = (drug.effects.bodyLoad * 0.2 + 1.2) * bloomScale;
   const sway = swayAmt * (Math.sin(time * 1.1) * 0.6 + windBase * 0.5);
 
-  // Ego dissolution — smoothly ramps using same progress-based approach
+  // Ego dissolution — keyframe-based like the rest, zero-duration safe
   const egoLevel = drug.effects.egoDissolve / 10;
   let egoRamp = 0;
-  if (progress <= pOnset) {
-    egoRamp = 0;
-  } else if (progress <= pComeUp) {
-    egoRamp = smoothstep(remap(progress, pOnset, pComeUp)) * 0.6;
-  } else if (progress <= pPeak) {
-    egoRamp = 0.6 + 0.4 * Math.sin(remap(progress, pComeUp, pPeak) * Math.PI);
-  } else if (progress <= pOffset) {
-    egoRamp = 0.6 * (1 - smoothstep(remap(progress, pPeak, pOffset)));
-  } else {
-    egoRamp = 0;
+  {
+    const egoKf = [
+      { p: 0, v: 0 },
+      { p: pOnset, v: 0 },
+      { p: pComeUp, v: 0.6 },
+      { p: pComeUp + (pPeak - pComeUp) * 0.5, v: 1.0 },
+      { p: pPeak, v: 0.6 },
+      { p: pOffset, v: 0 },
+      { p: 1, v: 0 },
+    ];
+    // Deduplicate same-position keyframes
+    const ek = [];
+    for (let i = 0; i < egoKf.length; i++) {
+      if (ek.length > 0 && Math.abs(egoKf[i].p - ek[ek.length - 1].p) < 0.0001) {
+        ek[ek.length - 1] = egoKf[i];
+      } else {
+        ek.push(egoKf[i]);
+      }
+    }
+    let e0 = ek[0], e1 = ek[ek.length - 1];
+    for (let i = 0; i < ek.length - 1; i++) {
+      if (progress >= ek[i].p && progress <= ek[i + 1].p) {
+        e0 = ek[i]; e1 = ek[i + 1]; break;
+      }
+    }
+    const eSpan = e1.p - e0.p;
+    const eT = eSpan > 0.0001 ? (progress - e0.p) / eSpan : 1;
+    egoRamp = e0.v + (e1.v - e0.v) * smoothstep(Math.max(0, Math.min(1, eT)));
   }
   const egoAmt = egoLevel * egoRamp; // 0–1 smooth
   const egoBreath = 0.5 + 0.5 * Math.sin(time * 0.8);
