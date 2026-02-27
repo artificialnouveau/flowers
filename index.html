@@ -2750,17 +2750,40 @@ const AudioEngine = (() => {
     return muted;
   }
 
-  // iOS audio unlock: play a tiny silent buffer to "prime" the AudioContext.
-  // Must be called synchronously inside a user gesture handler.
-  function unlockCtx() {
-    if (!ctx) return;
+  // iOS audio unlock: force "playback" audio session so sound plays even when
+  // the hardware silent/ringer switch is on. Two strategies for broad iOS support:
+  // 1. navigator.audioSession API (iOS 17+)
+  // 2. Play a silent <audio> element (forces iOS to switch from "ambient" to
+  //    "playback" session, which ignores the silent switch)
+  function unlockiOSAudio() {
+    // Strategy 1: modern audioSession API
+    if (navigator.audioSession) {
+      try { navigator.audioSession.type = 'playback'; } catch(e) {}
+    }
+    // Strategy 2: silent <audio> element trick (works on older iOS too)
     try {
-      const buf = ctx.createBuffer(1, 1, 22050);
-      const src = ctx.createBufferSource();
-      src.buffer = buf;
-      src.connect(ctx.destination);
-      src.start(0);
+      let a = document.getElementById('_iosUnlock');
+      if (!a) {
+        a = document.createElement('audio');
+        a.id = '_iosUnlock';
+        a.setAttribute('playsinline', '');
+        a.setAttribute('webkit-playsinline', '');
+        // Tiny silent MP3 (~200 bytes)
+        a.src = 'data:audio/mpeg;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAABhgC7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7v///////////////////////////////////////////////////////8AAAAATGF2YzU4LjEzAAAAAAAAAAAAAAAAJAAAAAAAAAAAAYYAAAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAABhgC7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7v///////////////////////////////////////////////////////8AAAAATGF2YzU4LjEzAAAAAAAAAAAAAAAAJAAAAAAAAAAAAYYAAAAAAAAAAAAAAAAA';
+        document.body.appendChild(a);
+      }
+      a.play().catch(() => {});
     } catch(e) {}
+    // Strategy 3: silent buffer through AudioContext
+    if (ctx) {
+      try {
+        const buf = ctx.createBuffer(1, 1, 22050);
+        const src = ctx.createBufferSource();
+        src.buffer = buf;
+        src.connect(ctx.destination);
+        src.start(0);
+      } catch(e) {}
+    }
   }
 
   // Prepare a fresh AudioContext. Returns the resume promise.
@@ -2771,6 +2794,8 @@ const AudioEngine = (() => {
       try { ctx.close(); } catch(e) {}
       ctx = null; masterGain = null; breatheGain = null; nodes = {};
     }
+    // Unlock iOS silent switch BEFORE creating AudioContext
+    unlockiOSAudio();
     // Create new context synchronously (gesture registration)
     ctx = new (window.AudioContext || window.webkitAudioContext)();
     breatheGain = ctx.createGain();
@@ -2788,7 +2813,6 @@ const AudioEngine = (() => {
   function restart(drug, prefix = 'solo') {
     const p = prepareFreshCtx();
     p.then(() => {
-      unlockCtx();
       buildGraph(drug, prefix);
       active = true;
       masterGain.gain.value = 0.8;
@@ -2798,7 +2822,6 @@ const AudioEngine = (() => {
   function restartDual(drug1, drug2) {
     const p = prepareFreshCtx();
     p.then(() => {
-      unlockCtx();
       buildGraph(drug1, 'comp0');
       buildGraph(drug2, 'comp1');
       active = true;
@@ -2996,10 +3019,15 @@ const AudioEngine = (() => {
           ctx = null; masterGain = null; breatheGain = null; nodes = {};
         }
 
+        // Unlock iOS silent switch
+        log.push('4. unlocking iOS audio...');
+        unlockiOSAudio();
+        log.push('4b. audioSession=' + (navigator.audioSession ? navigator.audioSession.type : 'N/A'));
+
         // Create fresh context
-        log.push('4. creating AudioContext...');
+        log.push('5. creating AudioContext...');
         ctx = new (window.AudioContext || window.webkitAudioContext)();
-        log.push('5. ctx.state=' + ctx.state);
+        log.push('5b. ctx.state=' + ctx.state);
 
         // Master gain chain (no oscillators yet!)
         breatheGain = ctx.createGain();
