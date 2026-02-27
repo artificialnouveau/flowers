@@ -1,0 +1,919 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flower Drug Animations</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: #0f0f1a;
+    color: #e2e8f0;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  header {
+    padding: 20px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+    border-bottom: 1px solid #1e293b;
+    background: #0f0f1aee;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(12px);
+  }
+
+  header h1 {
+    font-size: 1.4rem;
+    font-weight: 300;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .controls {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  select, button {
+    background: #1e293b;
+    color: #e2e8f0;
+    border: 1px solid #334155;
+    padding: 8px 14px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  select:hover, button:hover {
+    background: #334155;
+    border-color: #475569;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 20px;
+    padding: 28px;
+  }
+
+  .card {
+    background: #1a1a2e;
+    border: 1px solid #1e293b;
+    border-radius: 14px;
+    padding: 12px;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .card:hover {
+    border-color: #475569;
+    transform: translateY(-3px);
+    box-shadow: 0 8px 32px #0008;
+  }
+
+  .card svg { width: 190px; height: 200px; }
+
+  .card .label {
+    margin-top: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-align: center;
+  }
+
+  .card .sub-label {
+    font-size: 0.68rem;
+    color: #64748b;
+    margin-top: 2px;
+    text-align: center;
+  }
+
+  /* Solo overlay */
+  .overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: #0f0f1af2;
+    z-index: 200;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(8px);
+  }
+  .overlay.open { display: flex; }
+
+  .overlay .close-btn {
+    position: absolute;
+    top: 18px;
+    right: 24px;
+    font-size: 2rem;
+    background: none;
+    border: none;
+    color: #94a3b8;
+    cursor: pointer;
+    line-height: 1;
+  }
+  .overlay .close-btn:hover { color: #fff; }
+
+  .overlay svg.solo-flower {
+    width: min(70vw, 420px);
+    height: min(70vw, 420px);
+  }
+
+  .solo-info { text-align: center; margin-top: 12px; }
+
+  .solo-info h2 {
+    font-size: 1.6rem;
+    font-weight: 300;
+    letter-spacing: 1px;
+  }
+
+  .solo-info .category-tag {
+    font-size: 0.75rem;
+    color: #64748b;
+    margin-top: 3px;
+  }
+
+  .phase-indicator {
+    margin-top: 10px;
+    font-size: 0.95rem;
+    color: #a78bfa;
+    font-weight: 500;
+    min-height: 22px;
+  }
+
+  .timeline-container {
+    margin-top: 16px;
+    width: min(70vw, 420px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .timeline-container input[type=range] {
+    width: 100%;
+    accent-color: #6366f1;
+    cursor: pointer;
+  }
+
+  .timeline-labels {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    font-size: 0.7rem;
+    color: #64748b;
+  }
+
+  .solo-controls {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+  }
+
+  .solo-controls button {
+    font-size: 1.1rem;
+    padding: 8px 18px;
+  }
+
+  /* Intro / legend */
+  .intro {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 24px 32px 8px;
+    line-height: 1.6;
+  }
+
+  .intro p {
+    font-size: 0.85rem;
+    color: #94a3b8;
+    margin-bottom: 10px;
+  }
+
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 18px;
+    font-size: 0.72rem;
+    color: #64748b;
+    margin-top: 4px;
+  }
+
+  .legend span { white-space: nowrap; }
+  .legend b { color: #94a3b8; font-weight: 500; }
+
+  /* Solo effect details */
+  .solo-details {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 16px;
+    justify-content: center;
+    margin-top: 10px;
+    font-size: 0.72rem;
+    color: #64748b;
+    max-width: min(80vw, 480px);
+  }
+
+  .solo-details span b { color: #94a3b8; font-weight: 500; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Flower Drug Animations</h1>
+  <div class="controls">
+    <select id="categoryFilter">
+      <option value="All">All Categories</option>
+    </select>
+    <button id="playAllBtn">&#9654; Play All</button>
+    <button id="restartAllBtn">&#8634; Restart</button>
+  </div>
+</header>
+
+<div class="intro">
+  <p>Each flower represents a drug's experience profile. The animation plays through onset, come-up, peak, offset, and after-effects in real-time compression (1 hour = 1 second). Click any flower to watch its full timeline.</p>
+  <div class="legend">
+    <span><b>Petals</b> = cognitive complexity</span>
+    <span><b>Shape</b> = drug class (rounded: depressants, pointed: stimulants, wavy: psychedelics, spiky: dissociatives)</span>
+    <span><b>Color</b> = category</span>
+    <span><b>Size</b> = intensity</span>
+    <span><b>Sway</b> = body load</span>
+    <span><b>Center</b> = ego dissolution</span>
+    <span><b>Stem</b> = total duration</span>
+    <span><b>Glow</b> = peak phase</span>
+  </div>
+</div>
+
+<div class="grid" id="grid"></div>
+
+<div class="overlay" id="overlay">
+  <button class="close-btn" id="closeOverlay">&times;</button>
+  <div id="soloFlowerContainer"></div>
+  <div class="solo-info">
+    <h2 id="soloName"></h2>
+    <div class="category-tag" id="soloCategory"></div>
+    <div class="phase-indicator" id="phaseIndicator"></div>
+    <div class="solo-details" id="soloDetails"></div>
+  </div>
+  <div class="timeline-container">
+    <input type="range" id="timeline" min="0" max="1000" value="0">
+    <div class="timeline-labels">
+      <span id="timeLabel">0:00</span>
+      <span id="totalLabel">0:00</span>
+    </div>
+  </div>
+  <div class="solo-controls">
+    <button id="soloRestart">&#8634;</button>
+    <button id="soloPlayPause">&#9654;</button>
+  </div>
+</div>
+
+<script>
+// ─── Drug Data (embedded to work with file:// protocol) ───
+const drugs = [
+  {
+    id: "lsd", name: "LSD", category: "Psychedelics", subcategory: "Lysergamides",
+    duration: { onset: 0.5, comeUp: 1.5, peak: 4, offset: 3, afterEffects: 3 },
+    effects: { cognitiveComplexity: 10, euphoria: 7, intensity: 9, bodyLoad: 4, egoDissolve: 8, visuals: 9 },
+    flower: { petalCount: 12, petalShape: "wavy", primaryColor: "#a855f7", secondaryColor: "#f472b6", petalRadius: 38, centerSize: 14, stemHeight: 90 }
+  },
+  {
+    id: "1p-lsd", name: "1P-LSD", category: "Psychedelics", subcategory: "Lysergamides",
+    duration: { onset: 0.75, comeUp: 1.5, peak: 3.5, offset: 3, afterEffects: 2.5 },
+    effects: { cognitiveComplexity: 9, euphoria: 6, intensity: 8, bodyLoad: 4, egoDissolve: 7, visuals: 8 },
+    flower: { petalCount: 11, petalShape: "wavy", primaryColor: "#c084fc", secondaryColor: "#e879f9", petalRadius: 36, centerSize: 13, stemHeight: 85 }
+  },
+  {
+    id: "psilocybin", name: "Psilocybin Mushrooms", category: "Psychedelics", subcategory: "Tryptamines",
+    duration: { onset: 0.5, comeUp: 1, peak: 2.5, offset: 1.5, afterEffects: 1 },
+    effects: { cognitiveComplexity: 8, euphoria: 7, intensity: 8, bodyLoad: 5, egoDissolve: 7, visuals: 8 },
+    flower: { petalCount: 9, petalShape: "wavy", primaryColor: "#8b5cf6", secondaryColor: "#6ee7b7", petalRadius: 34, centerSize: 13, stemHeight: 55 }
+  },
+  {
+    id: "dmt", name: "DMT", category: "Psychedelics", subcategory: "Tryptamines",
+    duration: { onset: 0.05, comeUp: 0.08, peak: 0.17, offset: 0.17, afterEffects: 0.5 },
+    effects: { cognitiveComplexity: 10, euphoria: 8, intensity: 10, bodyLoad: 6, egoDissolve: 10, visuals: 10 },
+    flower: { petalCount: 12, petalShape: "wavy", primaryColor: "#e11d48", secondaryColor: "#fbbf24", petalRadius: 42, centerSize: 18, stemHeight: 12 }
+  },
+  {
+    id: "mescaline", name: "Mescaline", category: "Psychedelics", subcategory: "Phenethylamines",
+    duration: { onset: 1, comeUp: 2, peak: 4, offset: 3, afterEffects: 4 },
+    effects: { cognitiveComplexity: 8, euphoria: 8, intensity: 8, bodyLoad: 6, egoDissolve: 6, visuals: 8 },
+    flower: { petalCount: 9, petalShape: "wavy", primaryColor: "#059669", secondaryColor: "#fbbf24", petalRadius: 34, centerSize: 11, stemHeight: 95 }
+  },
+  {
+    id: "2cb", name: "2C-B", category: "Psychedelics", subcategory: "Phenethylamines",
+    duration: { onset: 0.5, comeUp: 0.75, peak: 2, offset: 1.5, afterEffects: 1 },
+    effects: { cognitiveComplexity: 6, euphoria: 8, intensity: 7, bodyLoad: 5, egoDissolve: 3, visuals: 8 },
+    flower: { petalCount: 7, petalShape: "wavy", primaryColor: "#ec4899", secondaryColor: "#a78bfa", petalRadius: 30, centerSize: 7, stemHeight: 48 }
+  },
+  {
+    id: "ketamine", name: "Ketamine", category: "Dissociatives", subcategory: "Dissociatives",
+    duration: { onset: 0.08, comeUp: 0.17, peak: 0.75, offset: 0.5, afterEffects: 2 },
+    effects: { cognitiveComplexity: 7, euphoria: 6, intensity: 8, bodyLoad: 7, egoDissolve: 8, visuals: 6 },
+    flower: { petalCount: 8, petalShape: "spiky", primaryColor: "#64748b", secondaryColor: "#38bdf8", petalRadius: 34, centerSize: 15, stemHeight: 30 }
+  },
+  {
+    id: "dxm", name: "DXM", category: "Dissociatives", subcategory: "Dissociatives",
+    duration: { onset: 0.75, comeUp: 1.5, peak: 3, offset: 2, afterEffects: 6 },
+    effects: { cognitiveComplexity: 7, euphoria: 5, intensity: 7, bodyLoad: 7, egoDissolve: 7, visuals: 5 },
+    flower: { petalCount: 8, petalShape: "spiky", primaryColor: "#475569", secondaryColor: "#94a3b8", petalRadius: 30, centerSize: 13, stemHeight: 90 }
+  },
+  {
+    id: "mdma", name: "MDMA", category: "Entactogens", subcategory: "Entactogens",
+    duration: { onset: 0.5, comeUp: 0.5, peak: 2.5, offset: 1.5, afterEffects: 3 },
+    effects: { cognitiveComplexity: 5, euphoria: 10, intensity: 9, bodyLoad: 6, egoDissolve: 4, visuals: 3 },
+    flower: { petalCount: 6, petalShape: "rounded", primaryColor: "#f43f5e", secondaryColor: "#fbbf24", petalRadius: 38, centerSize: 8, stemHeight: 60 }
+  },
+  {
+    id: "mda", name: "MDA", category: "Entactogens", subcategory: "Entactogens",
+    duration: { onset: 0.5, comeUp: 1, peak: 3, offset: 2, afterEffects: 4 },
+    effects: { cognitiveComplexity: 6, euphoria: 8, intensity: 8, bodyLoad: 7, egoDissolve: 5, visuals: 6 },
+    flower: { petalCount: 7, petalShape: "rounded", primaryColor: "#e11d48", secondaryColor: "#fb923c", petalRadius: 34, centerSize: 10, stemHeight: 75 }
+  },
+  {
+    id: "cannabis", name: "Cannabis", category: "Cannabinoids", subcategory: "Cannabinoids",
+    duration: { onset: 0.17, comeUp: 0.33, peak: 1.5, offset: 1, afterEffects: 1 },
+    effects: { cognitiveComplexity: 4, euphoria: 6, intensity: 4, bodyLoad: 3, egoDissolve: 1, visuals: 2 },
+    flower: { petalCount: 5, petalShape: "rounded", primaryColor: "#22c55e", secondaryColor: "#86efac", petalRadius: 22, centerSize: 6, stemHeight: 35 }
+  },
+  {
+    id: "jwh018", name: "JWH-018", category: "Cannabinoids", subcategory: "Cannabinoids",
+    duration: { onset: 0.05, comeUp: 0.17, peak: 1, offset: 0.5, afterEffects: 1.5 },
+    effects: { cognitiveComplexity: 5, euphoria: 5, intensity: 7, bodyLoad: 6, egoDissolve: 3, visuals: 3 },
+    flower: { petalCount: 6, petalShape: "rounded", primaryColor: "#16a34a", secondaryColor: "#fde047", petalRadius: 30, centerSize: 7, stemHeight: 28 }
+  },
+  {
+    id: "cocaine", name: "Cocaine", category: "Stimulants", subcategory: "Stimulants",
+    duration: { onset: 0.03, comeUp: 0.08, peak: 0.5, offset: 0.33, afterEffects: 2 },
+    effects: { cognitiveComplexity: 4, euphoria: 8, intensity: 7, bodyLoad: 5, egoDissolve: 0, visuals: 0 },
+    flower: { petalCount: 5, petalShape: "pointed", primaryColor: "#f59e0b", secondaryColor: "#fef3c7", petalRadius: 30, centerSize: 5, stemHeight: 25 }
+  },
+  {
+    id: "amphetamine", name: "Amphetamine", category: "Stimulants", subcategory: "Stimulants",
+    duration: { onset: 0.33, comeUp: 0.5, peak: 3, offset: 2, afterEffects: 4 },
+    effects: { cognitiveComplexity: 5, euphoria: 7, intensity: 7, bodyLoad: 5, egoDissolve: 0, visuals: 0 },
+    flower: { petalCount: 6, petalShape: "pointed", primaryColor: "#ef4444", secondaryColor: "#fbbf24", petalRadius: 30, centerSize: 5, stemHeight: 72 }
+  },
+  {
+    id: "morphine", name: "Morphine", category: "Depressants", subcategory: "Opioids",
+    duration: { onset: 0.25, comeUp: 0.5, peak: 2, offset: 1.5, afterEffects: 2 },
+    effects: { cognitiveComplexity: 3, euphoria: 9, intensity: 7, bodyLoad: 3, egoDissolve: 2, visuals: 0 },
+    flower: { petalCount: 4, petalShape: "rounded", primaryColor: "#6366f1", secondaryColor: "#c4b5fd", petalRadius: 30, centerSize: 6, stemHeight: 50 }
+  },
+  {
+    id: "codeine", name: "Codeine", category: "Depressants", subcategory: "Opioids",
+    duration: { onset: 0.5, comeUp: 0.5, peak: 2, offset: 1.5, afterEffects: 1.5 },
+    effects: { cognitiveComplexity: 2, euphoria: 5, intensity: 4, bodyLoad: 2, egoDissolve: 1, visuals: 0 },
+    flower: { petalCount: 4, petalShape: "rounded", primaryColor: "#818cf8", secondaryColor: "#ddd6fe", petalRadius: 22, centerSize: 5, stemHeight: 48 }
+  },
+  {
+    id: "alprazolam", name: "Alprazolam", category: "Depressants", subcategory: "Benzodiazepines",
+    duration: { onset: 0.25, comeUp: 0.5, peak: 2, offset: 2, afterEffects: 4 },
+    effects: { cognitiveComplexity: 2, euphoria: 4, intensity: 5, bodyLoad: 3, egoDissolve: 1, visuals: 0 },
+    flower: { petalCount: 4, petalShape: "rounded", primaryColor: "#3b82f6", secondaryColor: "#93c5fd", petalRadius: 24, centerSize: 5, stemHeight: 65 }
+  },
+  {
+    id: "diazepam", name: "Diazepam", category: "Depressants", subcategory: "Benzodiazepines",
+    duration: { onset: 0.25, comeUp: 0.75, peak: 3, offset: 3, afterEffects: 8 },
+    effects: { cognitiveComplexity: 2, euphoria: 3, intensity: 4, bodyLoad: 2, egoDissolve: 1, visuals: 0 },
+    flower: { petalCount: 4, petalShape: "rounded", primaryColor: "#2563eb", secondaryColor: "#60a5fa", petalRadius: 22, centerSize: 5, stemHeight: 95 }
+  },
+  {
+    id: "dph", name: "DPH (Diphenhydramine)", category: "Deliriants", subcategory: "Deliriants",
+    duration: { onset: 0.75, comeUp: 1.5, peak: 3, offset: 2, afterEffects: 6 },
+    effects: { cognitiveComplexity: 6, euphoria: 1, intensity: 7, bodyLoad: 8, egoDissolve: 5, visuals: 7 },
+    flower: { petalCount: 7, petalShape: "spiky", primaryColor: "#44403c", secondaryColor: "#78716c", petalRadius: 30, centerSize: 10, stemHeight: 90 }
+  },
+  {
+    id: "datura", name: "Datura", category: "Deliriants", subcategory: "Deliriants",
+    duration: { onset: 1, comeUp: 2, peak: 8, offset: 6, afterEffects: 24 },
+    effects: { cognitiveComplexity: 8, euphoria: 0, intensity: 10, bodyLoad: 10, egoDissolve: 9, visuals: 9 },
+    flower: { petalCount: 9, petalShape: "spiky", primaryColor: "#1c1917", secondaryColor: "#57534e", petalRadius: 42, centerSize: 16, stemHeight: 95 }
+  }
+];
+
+// ─── Globals ───
+let gridAnimations = {};
+let soloState = null;
+
+// ─── Init ───
+document.addEventListener('DOMContentLoaded', init);
+
+function init() {
+  buildFilters();
+  renderGrid('All');
+  setupOverlay();
+  setupHeaderButtons();
+}
+
+// ─── Category filter ───
+function buildFilters() {
+  const cats = [...new Set(drugs.map(d => d.category))];
+  const sel = document.getElementById('categoryFilter');
+  cats.forEach(c => {
+    const o = document.createElement('option');
+    o.value = c;
+    o.textContent = c;
+    sel.appendChild(o);
+  });
+  sel.addEventListener('change', () => renderGrid(sel.value));
+}
+
+// ─── Header buttons ───
+function setupHeaderButtons() {
+  document.getElementById('playAllBtn').addEventListener('click', () => {
+    Object.entries(gridAnimations).forEach(([id, a]) => {
+      a.playing = true;
+    });
+  });
+
+  document.getElementById('restartAllBtn').addEventListener('click', () => {
+    const now = performance.now();
+    Object.values(gridAnimations).forEach(a => {
+      a.startTime = now;
+      a.playing = true;
+    });
+  });
+}
+
+// ─── Grid rendering ───
+function renderGrid(category) {
+  Object.values(gridAnimations).forEach(a => { if (a.raf) cancelAnimationFrame(a.raf); });
+  gridAnimations = {};
+
+  const grid = document.getElementById('grid');
+  grid.innerHTML = '';
+  const filtered = category === 'All' ? drugs : drugs.filter(d => d.category === category);
+
+  filtered.forEach(drug => {
+    const card = document.createElement('div');
+    card.className = 'card';
+
+    const svgNS = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(svgNS, 'svg');
+    svg.setAttribute('viewBox', '-60 -55 120 130');
+    svg.setAttribute('xmlns', svgNS);
+    addDefs(svg, drug);
+    const g = document.createElementNS(svgNS, 'g');
+    g.dataset.id = drug.id;
+    svg.appendChild(g);
+
+    const label = document.createElement('div');
+    label.className = 'label';
+    label.textContent = drug.name;
+
+    const subLabel = document.createElement('div');
+    subLabel.className = 'sub-label';
+    subLabel.textContent = drug.subcategory;
+
+    card.appendChild(svg);
+    card.appendChild(label);
+    card.appendChild(subLabel);
+    card.addEventListener('click', () => openSolo(drug));
+    grid.appendChild(card);
+
+    startGridAnimation(drug, g);
+  });
+}
+
+function startGridAnimation(drug, g) {
+  const state = { startTime: performance.now(), playing: true, raf: null };
+  gridAnimations[drug.id] = state;
+
+  function tick(now) {
+    if (state.playing) {
+      const elapsed = (now - state.startTime) / 1000;
+      const totalDur = getTotalDuration(drug);
+      const loopDur = totalDur + 2; // 2s pause between loops
+      const t = elapsed % loopDur;
+      const progress = Math.min(t / totalDur, 1);
+      renderFlower(g, drug, progress, false, now);
+    }
+    state.raf = requestAnimationFrame(tick);
+  }
+  state.raf = requestAnimationFrame(tick);
+}
+
+// ─── Solo overlay ───
+function setupOverlay() {
+  document.getElementById('closeOverlay').addEventListener('click', closeSolo);
+  document.getElementById('soloPlayPause').addEventListener('click', toggleSoloPlay);
+  document.getElementById('soloRestart').addEventListener('click', restartSolo);
+
+  const timeline = document.getElementById('timeline');
+  timeline.addEventListener('input', () => {
+    if (!soloState) return;
+    soloState.scrubbing = true;
+    const progress = timeline.value / 1000;
+    renderFlower(soloState.g, soloState.drug, progress, true, performance.now());
+    updatePhaseLabel(soloState.drug, progress);
+    updateTimeLabels(soloState.drug, progress);
+  });
+  timeline.addEventListener('change', () => {
+    if (!soloState) return;
+    // Resume from scrub position
+    const progress = document.getElementById('timeline').value / 1000;
+    const totalDur = getTotalDuration(soloState.drug);
+    soloState.startTime = performance.now() - (progress * totalDur * 1000);
+    soloState.scrubbing = false;
+  });
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeSolo();
+    if (e.key === ' ' && soloState) { e.preventDefault(); toggleSoloPlay(); }
+  });
+}
+
+function openSolo(drug) {
+  if (soloState && soloState.raf) cancelAnimationFrame(soloState.raf);
+
+  const overlay = document.getElementById('overlay');
+  overlay.classList.add('open');
+  document.getElementById('soloName').textContent = drug.name;
+  document.getElementById('soloCategory').textContent = `${drug.category} \u2014 ${drug.subcategory}`;
+
+  // Effect details
+  const e = drug.effects;
+  const dur = drug.duration;
+  document.getElementById('soloDetails').innerHTML =
+    `<span><b>Intensity:</b> ${e.intensity}/10</span>` +
+    `<span><b>Euphoria:</b> ${e.euphoria}/10</span>` +
+    `<span><b>Visuals:</b> ${e.visuals}/10</span>` +
+    `<span><b>Body load:</b> ${e.bodyLoad}/10</span>` +
+    `<span><b>Ego dissolution:</b> ${e.egoDissolve}/10</span>` +
+    `<span><b>Total duration:</b> ${formatTime(getTotalDuration(drug))}</span>` +
+    `<span><b>Peak:</b> ${formatTime(dur.peak)}</span>`;
+
+  const container = document.getElementById('soloFlowerContainer');
+  container.innerHTML = '';
+
+  const svgNS = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(svgNS, 'svg');
+  svg.classList.add('solo-flower');
+  svg.setAttribute('viewBox', '-80 -70 160 160');
+  svg.setAttribute('xmlns', svgNS);
+  addDefs(svg, drug);
+  const g = document.createElementNS(svgNS, 'g');
+  svg.appendChild(g);
+  container.appendChild(svg);
+
+  soloState = { drug, g, startTime: performance.now(), playing: true, scrubbing: false, raf: null };
+  document.getElementById('soloPlayPause').innerHTML = '&#9646;&#9646;';
+
+  const totalDur = getTotalDuration(drug);
+  document.getElementById('totalLabel').textContent = formatTime(totalDur);
+  document.getElementById('timeline').value = 0;
+
+  function tick(now) {
+    if (!soloState) return;
+    if (soloState.playing && !soloState.scrubbing) {
+      const elapsed = (now - soloState.startTime) / 1000;
+      const progress = Math.min(elapsed / totalDur, 1);
+      renderFlower(g, soloState.drug, progress, true, now);
+      document.getElementById('timeline').value = progress * 1000;
+      updatePhaseLabel(drug, progress);
+      updateTimeLabels(drug, progress);
+
+      if (progress >= 1) {
+        soloState.playing = false;
+        document.getElementById('soloPlayPause').innerHTML = '&#9654;';
+      }
+    }
+    soloState.raf = requestAnimationFrame(tick);
+  }
+  soloState.raf = requestAnimationFrame(tick);
+}
+
+function closeSolo() {
+  document.getElementById('overlay').classList.remove('open');
+  if (soloState && soloState.raf) cancelAnimationFrame(soloState.raf);
+  soloState = null;
+}
+
+function toggleSoloPlay() {
+  if (!soloState) return;
+  soloState.playing = !soloState.playing;
+  document.getElementById('soloPlayPause').innerHTML = soloState.playing ? '&#9646;&#9646;' : '&#9654;';
+  if (soloState.playing) {
+    const progress = document.getElementById('timeline').value / 1000;
+    const totalDur = getTotalDuration(soloState.drug);
+    soloState.startTime = performance.now() - (progress * totalDur * 1000);
+  }
+}
+
+function restartSolo() {
+  if (!soloState) return;
+  soloState.startTime = performance.now();
+  soloState.playing = true;
+  soloState.scrubbing = false;
+  document.getElementById('soloPlayPause').innerHTML = '&#9646;&#9646;';
+}
+
+// ─── Duration / phase helpers ───
+function getTotalDuration(drug) {
+  const d = drug.duration;
+  return d.onset + d.comeUp + d.peak + d.offset + d.afterEffects;
+}
+
+function getPhaseInfo(drug, progress) {
+  const d = drug.duration;
+  const total = getTotalDuration(drug);
+  const t = progress * total;
+  let acc = 0;
+  const phases = [
+    { name: 'Onset', dur: d.onset },
+    { name: 'Come Up', dur: d.comeUp },
+    { name: 'Peak', dur: d.peak },
+    { name: 'Offset', dur: d.offset },
+    { name: 'After Effects', dur: d.afterEffects },
+  ];
+  for (const p of phases) {
+    if (t < acc + p.dur + 0.0001) {
+      return { name: p.name, phaseProgress: p.dur > 0 ? Math.max(0, (t - acc) / p.dur) : 0 };
+    }
+    acc += p.dur;
+  }
+  return { name: 'After Effects', phaseProgress: 1 };
+}
+
+function updatePhaseLabel(drug, progress) {
+  const el = document.getElementById('phaseIndicator');
+  if (progress <= 0.001) { el.textContent = 'Seed'; return; }
+  const { name, phaseProgress } = getPhaseInfo(drug, progress);
+  el.textContent = `${name} (${Math.round(phaseProgress * 100)}%)`;
+}
+
+function updateTimeLabels(drug, progress) {
+  document.getElementById('timeLabel').textContent = formatTime(progress * getTotalDuration(drug));
+}
+
+function formatTime(hours) {
+  const h = Math.floor(hours);
+  const m = Math.round((hours - h) * 60);
+  return `${h}h ${m.toString().padStart(2, '0')}m`;
+}
+
+// ─── SVG defs (gradients + glow filter) ───
+function addDefs(svg, drug) {
+  const svgNS = 'http://www.w3.org/2000/svg';
+  const defs = document.createElementNS(svgNS, 'defs');
+
+  const grad = document.createElementNS(svgNS, 'radialGradient');
+  grad.id = `grad-${drug.id}`;
+  grad.setAttribute('cx', '30%');
+  grad.setAttribute('cy', '30%');
+  grad.setAttribute('r', '70%');
+  const stop1 = document.createElementNS(svgNS, 'stop');
+  stop1.setAttribute('offset', '0%');
+  stop1.setAttribute('stop-color', drug.flower.secondaryColor);
+  const stop2 = document.createElementNS(svgNS, 'stop');
+  stop2.setAttribute('offset', '100%');
+  stop2.setAttribute('stop-color', drug.flower.primaryColor);
+  grad.appendChild(stop1);
+  grad.appendChild(stop2);
+  defs.appendChild(grad);
+
+  const filter = document.createElementNS(svgNS, 'filter');
+  filter.id = `glow-${drug.id}`;
+  filter.setAttribute('x', '-50%');
+  filter.setAttribute('y', '-50%');
+  filter.setAttribute('width', '200%');
+  filter.setAttribute('height', '200%');
+  filter.innerHTML = '<feGaussianBlur stdDeviation="4" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>';
+  defs.appendChild(filter);
+
+  svg.appendChild(defs);
+}
+
+// ─── Petal path generators (all curves, no sharp corners) ───
+function petalPath(shape, r) {
+  switch (shape) {
+    case 'rounded':
+      // Soft, full teardrop
+      return `M0,0 C${r*0.45},-${r*0.2} ${r*0.5},-${r*0.6} 0,-${r} C-${r*0.5},-${r*0.6} -${r*0.45},-${r*0.2} 0,0Z`;
+    case 'pointed':
+      // Narrow but with smooth curves instead of straight lines
+      return `M0,0 C${r*0.22},-${r*0.12} ${r*0.24},-${r*0.35} ${r*0.14},-${r*0.55} C${r*0.08},-${r*0.72} ${r*0.03},-${r*0.88} 0,-${r} C-${r*0.03},-${r*0.88} -${r*0.08},-${r*0.72} -${r*0.14},-${r*0.55} C-${r*0.24},-${r*0.35} -${r*0.22},-${r*0.12} 0,0Z`;
+    case 'wavy': {
+      // S-curve petals with organic wobble
+      return `M0,0 C${r*0.4},-${r*0.08} ${r*0.42},-${r*0.28} ${r*0.22},-${r*0.48} C${r*0.08},-${r*0.62} ${r*0.12},-${r*0.8} 0,-${r} C-${r*0.12},-${r*0.8} -${r*0.08},-${r*0.62} -${r*0.22},-${r*0.48} C-${r*0.42},-${r*0.28} -${r*0.4},-${r*0.08} 0,0Z`;
+    }
+    case 'spiky':
+      // Jagged silhouette but with curved transitions (cubic spline through the points)
+      return `M0,0 C${r*0.08},-${r*0.1} ${r*0.12},-${r*0.2} ${r*0.16},-${r*0.28} C${r*0.2},-${r*0.33} ${r*0.28},-${r*0.36} ${r*0.28},-${r*0.42} C${r*0.28},-${r*0.48} ${r*0.15},-${r*0.55} ${r*0.1},-${r*0.64} C${r*0.06},-${r*0.74} ${r*0.03},-${r*0.86} 0,-${r} C-${r*0.03},-${r*0.86} -${r*0.06},-${r*0.74} -${r*0.1},-${r*0.64} C-${r*0.15},-${r*0.55} -${r*0.28},-${r*0.48} -${r*0.28},-${r*0.42} C-${r*0.28},-${r*0.36} -${r*0.2},-${r*0.33} -${r*0.16},-${r*0.28} C-${r*0.12},-${r*0.2} -${r*0.08},-${r*0.1} 0,0Z`;
+    default:
+      return petalPath('rounded', r);
+  }
+}
+
+// ─── Easing ───
+function easeInOut(t) { return t < 0.5 ? 2*t*t : 1-Math.pow(-2*t+2,2)/2; }
+
+// ─── Main flower renderer ───
+function renderFlower(g, drug, progress, isSolo, now) {
+  const f = drug.flower;
+  const time = now / 1000;
+  const d = drug.duration;
+  const total = getTotalDuration(drug);
+  const t = progress * total;
+
+  // Animation state
+  let bloomScale = 0;
+  let stemGrow = 0;
+  let colorOpacity = 1;
+  let glowOn = false;
+  let wiltAngle = 0;
+  let opacityPulse = 1;
+
+  let acc = 0;
+
+  // Phase: Onset
+  if (t <= d.onset) {
+    const p = d.onset > 0 ? easeInOut(t / d.onset) : 1;
+    stemGrow = p * 0.25;
+    bloomScale = p * 0.04;
+  }
+  // Phase: Come Up
+  else if (t <= (acc = d.onset) + d.comeUp) {
+    const p = d.comeUp > 0 ? easeInOut((t - acc) / d.comeUp) : 1;
+    stemGrow = 0.25 + p * 0.5;
+    bloomScale = 0.04 + p * 0.5;
+  }
+  // Phase: Peak
+  else if (t <= (acc = d.onset + d.comeUp) + d.peak) {
+    const p = d.peak > 0 ? (t - acc) / d.peak : 1;
+    stemGrow = 0.75 + p * 0.25;
+    bloomScale = 0.54 + easeInOut(p) * 0.46;
+    glowOn = true;
+    if (drug.effects.visuals > 4) {
+      opacityPulse = 0.88 + Math.sin(time * (drug.effects.visuals * 0.7)) * 0.12;
+    }
+  }
+  // Phase: Offset
+  else if (t <= (acc = d.onset + d.comeUp + d.peak) + d.offset) {
+    const p = d.offset > 0 ? easeInOut((t - acc) / d.offset) : 1;
+    stemGrow = 1 - p * 0.15;
+    bloomScale = 1 - p * 0.35;
+    colorOpacity = 1 - p * 0.25;
+    wiltAngle = p * 12;
+  }
+  // Phase: After Effects
+  else {
+    acc = d.onset + d.comeUp + d.peak + d.offset;
+    const p = d.afterEffects > 0 ? easeInOut(Math.min((t - acc) / d.afterEffects, 1)) : 1;
+    stemGrow = 0.85 - p * 0.35;
+    bloomScale = 0.65 - p * 0.4;
+    colorOpacity = 0.75 - p * 0.45;
+    wiltAngle = 12 + p * 28;
+  }
+
+  // Scale for grid vs solo
+  const sc = isSolo ? 1.0 : 0.6;
+  const stemH = Math.min(f.stemHeight, 95) * sc * stemGrow;
+  const petalR = f.petalRadius * sc * bloomScale;
+  const centerR = f.centerSize * sc * bloomScale;
+
+  // Wind + body load → organic sway
+  const windBase = Math.sin(time * 0.4) * 0.6 + Math.sin(time * 2.3) * 0.3;
+  const swayAmt = (drug.effects.bodyLoad * 0.2 + 1.2) * bloomScale;
+  const sway = swayAmt * (Math.sin(time * 1.1) * 0.6 + windBase * 0.5);
+
+  // Ego dissolution → center pulsation during peak
+  const egoExpand = glowOn ? (1 + (drug.effects.egoDissolve / 10) * 0.25 * (0.5 + 0.5 * Math.sin(time * 2))) : 1;
+
+  // Clear and rebuild
+  while (g.firstChild) g.removeChild(g.firstChild);
+  const svgNS = 'http://www.w3.org/2000/svg';
+
+  // Stem (curved path that bends with the wind)
+  if (stemH > 1) {
+    const stemBend = sway * 0.7;
+    const stem = document.createElementNS(svgNS, 'path');
+    stem.setAttribute('d',
+      `M${sway * 0.3},0 C${sway * 0.3 + stemBend * 0.3},${stemH * 0.33} ${sway * 0.15 + stemBend * 0.15},${stemH * 0.66} ${sway * 0.1},${stemH}`);
+    stem.setAttribute('stroke', '#2d5a27');
+    stem.setAttribute('stroke-width', 2.2 * sc);
+    stem.setAttribute('stroke-linecap', 'round');
+    stem.setAttribute('fill', 'none');
+    stem.setAttribute('opacity', Math.max(0.1, colorOpacity));
+    g.appendChild(stem);
+
+    // Leaves
+    if (stemGrow > 0.35 && stemH > 10) {
+      const addLeaf = (cx, cy, rx, ry, rot) => {
+        const leaf = document.createElementNS(svgNS, 'ellipse');
+        leaf.setAttribute('cx', cx);
+        leaf.setAttribute('cy', cy);
+        leaf.setAttribute('rx', rx);
+        leaf.setAttribute('ry', ry);
+        leaf.setAttribute('fill', '#3a7a32');
+        leaf.setAttribute('opacity', Math.max(0.05, colorOpacity * 0.7));
+        leaf.setAttribute('transform', `rotate(${rot}, ${cx}, ${cy})`);
+        g.appendChild(leaf);
+      };
+      const ls = 5 * sc * Math.min(bloomScale + 0.3, 1);
+      addLeaf(-ls * 1.2 + sway * 0.2, stemH * 0.55, ls, ls * 0.4, -35);
+      addLeaf(ls * 1.1 + sway * 0.1, stemH * 0.35, ls * 0.85, ls * 0.35, 30);
+    }
+  }
+
+  // Flower head
+  const headG = document.createElementNS(svgNS, 'g');
+  const headX = sway;
+  headG.setAttribute('transform', `translate(${headX}, 0) rotate(${wiltAngle + sway * 0.5})`);
+  if (glowOn) headG.setAttribute('filter', `url(#glow-${drug.id})`);
+
+  // Petals — each petal gets its own wind-driven sway, scale breathing, and bend
+  if (petalR > 1) {
+    // Wind: a slow directional drift + faster gusts, shared across petals
+    const windDir = Math.sin(time * 0.4) * 0.6;           // slow wind direction shift
+    const windGust = Math.sin(time * 2.3) * 0.3;          // faster gusts
+    const windStrength = 0.5 + 0.5 * Math.sin(time * 0.7); // overall wind intensity
+
+    for (let i = 0; i < f.petalCount; i++) {
+      const baseAngle = (360 / f.petalCount) * i;
+      const iRad = (baseAngle * Math.PI) / 180;
+
+      // Per-petal phase offset so they don't all move in sync
+      const phase = i * 1.17 + drug.id.length * 0.3;
+
+      // Gentle angular wobble (wind catching each petal differently)
+      const angularWobble = (Math.sin(time * 1.4 + phase) * 2.5
+                           + Math.sin(time * 2.8 + phase * 1.3) * 1.2)
+                           * windStrength;
+
+      // Petals facing the wind direction sway more
+      const windAlignment = Math.cos(iRad - windDir);
+      const windPush = windAlignment * (windGust + windDir) * 3.0 * windStrength;
+
+      // Subtle breathing scale per petal (each slightly out of phase)
+      const breathe = 1 + Math.sin(time * 1.1 + phase * 0.8) * 0.04
+                        + Math.sin(time * 2.5 + phase * 1.5) * 0.02;
+
+      // Slight skew to simulate the petal bending in wind
+      const skewAmount = windAlignment * windStrength * 2.5 * Math.sin(time * 1.6 + phase);
+
+      const finalAngle = baseAngle + angularWobble + windPush;
+
+      const petalG = document.createElementNS(svgNS, 'g');
+      petalG.setAttribute('transform',
+        `rotate(${finalAngle}) scale(${breathe}) skewX(${skewAmount})`);
+
+      const petal = document.createElementNS(svgNS, 'path');
+      petal.setAttribute('d', petalPath(f.petalShape, petalR));
+      petal.setAttribute('fill', `url(#grad-${drug.id})`);
+      petal.setAttribute('opacity', Math.max(0.05, colorOpacity * opacityPulse));
+      petalG.appendChild(petal);
+      headG.appendChild(petalG);
+    }
+  }
+
+  // Center disc
+  if (centerR > 0.5) {
+    const outer = document.createElementNS(svgNS, 'circle');
+    outer.setAttribute('cx', 0);
+    outer.setAttribute('cy', 0);
+    outer.setAttribute('r', centerR * egoExpand);
+    outer.setAttribute('fill', f.secondaryColor);
+    outer.setAttribute('opacity', Math.max(0.05, colorOpacity * 0.85));
+    headG.appendChild(outer);
+
+    const inner = document.createElementNS(svgNS, 'circle');
+    inner.setAttribute('cx', 0);
+    inner.setAttribute('cy', 0);
+    inner.setAttribute('r', centerR * 0.45 * egoExpand);
+    inner.setAttribute('fill', f.primaryColor);
+    inner.setAttribute('opacity', Math.max(0.05, colorOpacity));
+    headG.appendChild(inner);
+  }
+
+  // Seed dot when not yet bloomed
+  if (bloomScale < 0.08) {
+    const seed = document.createElementNS(svgNS, 'circle');
+    seed.setAttribute('cx', 0);
+    seed.setAttribute('cy', 0);
+    seed.setAttribute('r', 2.5 * sc);
+    seed.setAttribute('fill', f.primaryColor);
+    seed.setAttribute('opacity', 0.7);
+    headG.appendChild(seed);
+  }
+
+  g.appendChild(headG);
+}
+</script>
+</body>
+</html>

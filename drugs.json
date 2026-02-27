@@ -1,0 +1,602 @@
+[
+  {
+    "id": "lsd",
+    "name": "LSD",
+    "category": "Psychedelics",
+    "subcategory": "Lysergamides",
+    "duration": {
+      "onset": 0.5,
+      "comeUp": 1.5,
+      "peak": 4,
+      "offset": 3,
+      "afterEffects": 3
+    },
+    "effects": {
+      "cognitiveComplexity": 10,
+      "euphoria": 7,
+      "intensity": 9,
+      "bodyLoad": 4,
+      "egoDissolve": 8,
+      "visuals": 9
+    },
+    "flower": {
+      "petalCount": 12,
+      "petalShape": "wavy",
+      "primaryColor": "#a855f7",
+      "secondaryColor": "#f472b6",
+      "petalRadius": 45,
+      "centerSize": 18,
+      "stemHeight": 120
+    }
+  },
+  {
+    "id": "1p-lsd",
+    "name": "1P-LSD",
+    "category": "Psychedelics",
+    "subcategory": "Lysergamides",
+    "duration": {
+      "onset": 0.75,
+      "comeUp": 1.5,
+      "peak": 3.5,
+      "offset": 3,
+      "afterEffects": 2.5
+    },
+    "effects": {
+      "cognitiveComplexity": 9,
+      "euphoria": 6,
+      "intensity": 8,
+      "bodyLoad": 4,
+      "egoDissolve": 7,
+      "visuals": 8
+    },
+    "flower": {
+      "petalCount": 11,
+      "petalShape": "wavy",
+      "primaryColor": "#c084fc",
+      "secondaryColor": "#e879f9",
+      "petalRadius": 42,
+      "centerSize": 16,
+      "stemHeight": 112
+    }
+  },
+  {
+    "id": "psilocybin",
+    "name": "Psilocybin Mushrooms",
+    "category": "Psychedelics",
+    "subcategory": "Tryptamines",
+    "duration": {
+      "onset": 0.5,
+      "comeUp": 1,
+      "peak": 2.5,
+      "offset": 1.5,
+      "afterEffects": 1
+    },
+    "effects": {
+      "cognitiveComplexity": 8,
+      "euphoria": 7,
+      "intensity": 8,
+      "bodyLoad": 5,
+      "egoDissolve": 7,
+      "visuals": 8
+    },
+    "flower": {
+      "petalCount": 9,
+      "petalShape": "wavy",
+      "primaryColor": "#8b5cf6",
+      "secondaryColor": "#6ee7b7",
+      "petalRadius": 40,
+      "centerSize": 16,
+      "stemHeight": 65
+    }
+  },
+  {
+    "id": "dmt",
+    "name": "DMT",
+    "category": "Psychedelics",
+    "subcategory": "Tryptamines",
+    "duration": {
+      "onset": 0.05,
+      "comeUp": 0.08,
+      "peak": 0.17,
+      "offset": 0.17,
+      "afterEffects": 0.5
+    },
+    "effects": {
+      "cognitiveComplexity": 10,
+      "euphoria": 8,
+      "intensity": 10,
+      "bodyLoad": 6,
+      "egoDissolve": 10,
+      "visuals": 10
+    },
+    "flower": {
+      "petalCount": 12,
+      "petalShape": "wavy",
+      "primaryColor": "#e11d48",
+      "secondaryColor": "#fbbf24",
+      "petalRadius": 50,
+      "centerSize": 22,
+      "stemHeight": 10
+    }
+  },
+  {
+    "id": "mescaline",
+    "name": "Mescaline",
+    "category": "Psychedelics",
+    "subcategory": "Phenethylamines",
+    "duration": {
+      "onset": 1,
+      "comeUp": 2,
+      "peak": 4,
+      "offset": 3,
+      "afterEffects": 4
+    },
+    "effects": {
+      "cognitiveComplexity": 8,
+      "euphoria": 8,
+      "intensity": 8,
+      "bodyLoad": 6,
+      "egoDissolve": 6,
+      "visuals": 8
+    },
+    "flower": {
+      "petalCount": 9,
+      "petalShape": "wavy",
+      "primaryColor": "#059669",
+      "secondaryColor": "#fbbf24",
+      "petalRadius": 40,
+      "centerSize": 14,
+      "stemHeight": 140
+    }
+  },
+  {
+    "id": "2cb",
+    "name": "2C-B",
+    "category": "Psychedelics",
+    "subcategory": "Phenethylamines",
+    "duration": {
+      "onset": 0.5,
+      "comeUp": 0.75,
+      "peak": 2,
+      "offset": 1.5,
+      "afterEffects": 1
+    },
+    "effects": {
+      "cognitiveComplexity": 6,
+      "euphoria": 8,
+      "intensity": 7,
+      "bodyLoad": 5,
+      "egoDissolve": 3,
+      "visuals": 8
+    },
+    "flower": {
+      "petalCount": 7,
+      "petalShape": "wavy",
+      "primaryColor": "#ec4899",
+      "secondaryColor": "#a78bfa",
+      "petalRadius": 35,
+      "centerSize": 8,
+      "stemHeight": 58
+    }
+  },
+  {
+    "id": "ketamine",
+    "name": "Ketamine",
+    "category": "Dissociatives",
+    "subcategory": "Dissociatives",
+    "duration": {
+      "onset": 0.08,
+      "comeUp": 0.17,
+      "peak": 0.75,
+      "offset": 0.5,
+      "afterEffects": 2
+    },
+    "effects": {
+      "cognitiveComplexity": 7,
+      "euphoria": 6,
+      "intensity": 8,
+      "bodyLoad": 7,
+      "egoDissolve": 8,
+      "visuals": 6
+    },
+    "flower": {
+      "petalCount": 8,
+      "petalShape": "spiky",
+      "primaryColor": "#64748b",
+      "secondaryColor": "#38bdf8",
+      "petalRadius": 40,
+      "centerSize": 18,
+      "stemHeight": 35
+    }
+  },
+  {
+    "id": "dxm",
+    "name": "DXM",
+    "category": "Dissociatives",
+    "subcategory": "Dissociatives",
+    "duration": {
+      "onset": 0.75,
+      "comeUp": 1.5,
+      "peak": 3,
+      "offset": 2,
+      "afterEffects": 6
+    },
+    "effects": {
+      "cognitiveComplexity": 7,
+      "euphoria": 5,
+      "intensity": 7,
+      "bodyLoad": 7,
+      "egoDissolve": 7,
+      "visuals": 5
+    },
+    "flower": {
+      "petalCount": 8,
+      "petalShape": "spiky",
+      "primaryColor": "#475569",
+      "secondaryColor": "#94a3b8",
+      "petalRadius": 35,
+      "centerSize": 16,
+      "stemHeight": 132
+    }
+  },
+  {
+    "id": "mdma",
+    "name": "MDMA",
+    "category": "Entactogens",
+    "subcategory": "Entactogens",
+    "duration": {
+      "onset": 0.5,
+      "comeUp": 0.5,
+      "peak": 2.5,
+      "offset": 1.5,
+      "afterEffects": 3
+    },
+    "effects": {
+      "cognitiveComplexity": 5,
+      "euphoria": 10,
+      "intensity": 9,
+      "bodyLoad": 6,
+      "egoDissolve": 4,
+      "visuals": 3
+    },
+    "flower": {
+      "petalCount": 6,
+      "petalShape": "rounded",
+      "primaryColor": "#f43f5e",
+      "secondaryColor": "#fbbf24",
+      "petalRadius": 45,
+      "centerSize": 10,
+      "stemHeight": 80
+    }
+  },
+  {
+    "id": "mda",
+    "name": "MDA",
+    "category": "Entactogens",
+    "subcategory": "Entactogens",
+    "duration": {
+      "onset": 0.5,
+      "comeUp": 1,
+      "peak": 3,
+      "offset": 2,
+      "afterEffects": 4
+    },
+    "effects": {
+      "cognitiveComplexity": 6,
+      "euphoria": 8,
+      "intensity": 8,
+      "bodyLoad": 7,
+      "egoDissolve": 5,
+      "visuals": 6
+    },
+    "flower": {
+      "petalCount": 7,
+      "petalShape": "rounded",
+      "primaryColor": "#e11d48",
+      "secondaryColor": "#fb923c",
+      "petalRadius": 40,
+      "centerSize": 12,
+      "stemHeight": 105
+    }
+  },
+  {
+    "id": "cannabis",
+    "name": "Cannabis",
+    "category": "Cannabinoids",
+    "subcategory": "Cannabinoids",
+    "duration": {
+      "onset": 0.17,
+      "comeUp": 0.33,
+      "peak": 1.5,
+      "offset": 1,
+      "afterEffects": 1
+    },
+    "effects": {
+      "cognitiveComplexity": 4,
+      "euphoria": 6,
+      "intensity": 4,
+      "bodyLoad": 3,
+      "egoDissolve": 1,
+      "visuals": 2
+    },
+    "flower": {
+      "petalCount": 5,
+      "petalShape": "rounded",
+      "primaryColor": "#22c55e",
+      "secondaryColor": "#86efac",
+      "petalRadius": 25,
+      "centerSize": 6,
+      "stemHeight": 40
+    }
+  },
+  {
+    "id": "jwh018",
+    "name": "JWH-018",
+    "category": "Cannabinoids",
+    "subcategory": "Cannabinoids",
+    "duration": {
+      "onset": 0.05,
+      "comeUp": 0.17,
+      "peak": 1,
+      "offset": 0.5,
+      "afterEffects": 1.5
+    },
+    "effects": {
+      "cognitiveComplexity": 5,
+      "euphoria": 5,
+      "intensity": 7,
+      "bodyLoad": 6,
+      "egoDissolve": 3,
+      "visuals": 3
+    },
+    "flower": {
+      "petalCount": 6,
+      "petalShape": "rounded",
+      "primaryColor": "#16a34a",
+      "secondaryColor": "#fde047",
+      "petalRadius": 35,
+      "centerSize": 8,
+      "stemHeight": 32
+    }
+  },
+  {
+    "id": "cocaine",
+    "name": "Cocaine",
+    "category": "Stimulants",
+    "subcategory": "Stimulants",
+    "duration": {
+      "onset": 0.03,
+      "comeUp": 0.08,
+      "peak": 0.5,
+      "offset": 0.33,
+      "afterEffects": 2
+    },
+    "effects": {
+      "cognitiveComplexity": 4,
+      "euphoria": 8,
+      "intensity": 7,
+      "bodyLoad": 5,
+      "egoDissolve": 0,
+      "visuals": 0
+    },
+    "flower": {
+      "petalCount": 5,
+      "petalShape": "pointed",
+      "primaryColor": "#f59e0b",
+      "secondaryColor": "#ffffff",
+      "petalRadius": 35,
+      "centerSize": 5,
+      "stemHeight": 29
+    }
+  },
+  {
+    "id": "amphetamine",
+    "name": "Amphetamine",
+    "category": "Stimulants",
+    "subcategory": "Stimulants",
+    "duration": {
+      "onset": 0.33,
+      "comeUp": 0.5,
+      "peak": 3,
+      "offset": 2,
+      "afterEffects": 4
+    },
+    "effects": {
+      "cognitiveComplexity": 5,
+      "euphoria": 7,
+      "intensity": 7,
+      "bodyLoad": 5,
+      "egoDissolve": 0,
+      "visuals": 0
+    },
+    "flower": {
+      "petalCount": 6,
+      "petalShape": "pointed",
+      "primaryColor": "#ef4444",
+      "secondaryColor": "#fbbf24",
+      "petalRadius": 35,
+      "centerSize": 5,
+      "stemHeight": 98
+    }
+  },
+  {
+    "id": "morphine",
+    "name": "Morphine",
+    "category": "Depressants",
+    "subcategory": "Opioids",
+    "duration": {
+      "onset": 0.25,
+      "comeUp": 0.5,
+      "peak": 2,
+      "offset": 1.5,
+      "afterEffects": 2
+    },
+    "effects": {
+      "cognitiveComplexity": 3,
+      "euphoria": 9,
+      "intensity": 7,
+      "bodyLoad": 3,
+      "egoDissolve": 2,
+      "visuals": 0
+    },
+    "flower": {
+      "petalCount": 4,
+      "petalShape": "rounded",
+      "primaryColor": "#6366f1",
+      "secondaryColor": "#c4b5fd",
+      "petalRadius": 35,
+      "centerSize": 7,
+      "stemHeight": 62
+    }
+  },
+  {
+    "id": "codeine",
+    "name": "Codeine",
+    "category": "Depressants",
+    "subcategory": "Opioids",
+    "duration": {
+      "onset": 0.5,
+      "comeUp": 0.5,
+      "peak": 2,
+      "offset": 1.5,
+      "afterEffects": 1.5
+    },
+    "effects": {
+      "cognitiveComplexity": 2,
+      "euphoria": 5,
+      "intensity": 4,
+      "bodyLoad": 2,
+      "egoDissolve": 1,
+      "visuals": 0
+    },
+    "flower": {
+      "petalCount": 4,
+      "petalShape": "rounded",
+      "primaryColor": "#818cf8",
+      "secondaryColor": "#ddd6fe",
+      "petalRadius": 25,
+      "centerSize": 6,
+      "stemHeight": 60
+    }
+  },
+  {
+    "id": "alprazolam",
+    "name": "Alprazolam",
+    "category": "Depressants",
+    "subcategory": "Benzodiazepines",
+    "duration": {
+      "onset": 0.25,
+      "comeUp": 0.5,
+      "peak": 2,
+      "offset": 2,
+      "afterEffects": 4
+    },
+    "effects": {
+      "cognitiveComplexity": 2,
+      "euphoria": 4,
+      "intensity": 5,
+      "bodyLoad": 3,
+      "egoDissolve": 1,
+      "visuals": 0
+    },
+    "flower": {
+      "petalCount": 4,
+      "petalShape": "rounded",
+      "primaryColor": "#3b82f6",
+      "secondaryColor": "#93c5fd",
+      "petalRadius": 28,
+      "centerSize": 6,
+      "stemHeight": 88
+    }
+  },
+  {
+    "id": "diazepam",
+    "name": "Diazepam",
+    "category": "Depressants",
+    "subcategory": "Benzodiazepines",
+    "duration": {
+      "onset": 0.25,
+      "comeUp": 0.75,
+      "peak": 3,
+      "offset": 3,
+      "afterEffects": 8
+    },
+    "effects": {
+      "cognitiveComplexity": 2,
+      "euphoria": 3,
+      "intensity": 4,
+      "bodyLoad": 2,
+      "egoDissolve": 1,
+      "visuals": 0
+    },
+    "flower": {
+      "petalCount": 4,
+      "petalShape": "rounded",
+      "primaryColor": "#2563eb",
+      "secondaryColor": "#60a5fa",
+      "petalRadius": 25,
+      "centerSize": 6,
+      "stemHeight": 150
+    }
+  },
+  {
+    "id": "dph",
+    "name": "DPH (Diphenhydramine)",
+    "category": "Deliriants",
+    "subcategory": "Deliriants",
+    "duration": {
+      "onset": 0.75,
+      "comeUp": 1.5,
+      "peak": 3,
+      "offset": 2,
+      "afterEffects": 6
+    },
+    "effects": {
+      "cognitiveComplexity": 6,
+      "euphoria": 1,
+      "intensity": 7,
+      "bodyLoad": 8,
+      "egoDissolve": 5,
+      "visuals": 7
+    },
+    "flower": {
+      "petalCount": 7,
+      "petalShape": "spiky",
+      "primaryColor": "#44403c",
+      "secondaryColor": "#78716c",
+      "petalRadius": 35,
+      "centerSize": 12,
+      "stemHeight": 132
+    }
+  },
+  {
+    "id": "datura",
+    "name": "Datura",
+    "category": "Deliriants",
+    "subcategory": "Deliriants",
+    "duration": {
+      "onset": 1,
+      "comeUp": 2,
+      "peak": 8,
+      "offset": 6,
+      "afterEffects": 24
+    },
+    "effects": {
+      "cognitiveComplexity": 8,
+      "euphoria": 0,
+      "intensity": 10,
+      "bodyLoad": 10,
+      "egoDissolve": 9,
+      "visuals": 9
+    },
+    "flower": {
+      "petalCount": 9,
+      "petalShape": "spiky",
+      "primaryColor": "#1c1917",
+      "secondaryColor": "#57534e",
+      "petalRadius": 50,
+      "centerSize": 20,
+      "stemHeight": 160
+    }
+  }
+]
