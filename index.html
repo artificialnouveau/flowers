@@ -546,11 +546,10 @@
     <select id="categoryFilter">
       <option value="All">All Categories</option>
     </select>
-    <button id="playAllBtn">&#9654; Play All</button>
-    <button id="restartAllBtn">&#8634; Restart</button>
+    <button id="fullListBtn">Full List (241)</button>
     <button id="compareBtn">Compare Two</button>
     <button id="randomPairBtn" title="Random pair">&#127922;</button>
-    <button id="fullListBtn">Full List (241)</button>
+    <button id="restartAllBtn">&#8634; Restart</button>
   </div>
 </header>
 
@@ -1054,12 +1053,6 @@ function rebuildCategoryOptions() {
 
 // ─── Header buttons ───
 function setupHeaderButtons() {
-  document.getElementById('playAllBtn').addEventListener('click', () => {
-    Object.entries(gridAnimations).forEach(([id, a]) => {
-      a.playing = true;
-    });
-  });
-
   document.getElementById('restartAllBtn').addEventListener('click', () => {
     const now = performance.now();
     Object.values(gridAnimations).forEach(a => {
