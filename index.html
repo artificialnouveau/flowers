@@ -44,7 +44,7 @@
     flex-wrap: wrap;
   }
 
-  select, button {
+  select, button, #searchBar {
     background: #1e293b;
     color: #e2e8f0;
     border: 1px solid #334155;
@@ -53,6 +53,16 @@
     font-size: 0.85rem;
     cursor: pointer;
     transition: all 0.2s;
+  }
+
+  #searchBar {
+    width: 160px;
+    cursor: text;
+  }
+  #searchBar:focus {
+    outline: none;
+    border-color: #6366f1;
+    box-shadow: 0 0 0 2px #6366f130;
   }
 
   select:hover, button:hover {
@@ -244,6 +254,27 @@
 
   .solo-details span b { color: #94a3b8; font-weight: 500; }
 
+  .pw-link {
+    display: inline-block;
+    margin-top: 8px;
+    color: #818cf8;
+    font-size: 0.75rem;
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+  .pw-link:hover { color: #a5b4fc; text-decoration: underline; }
+
+  .dose-slider-wrap {
+    margin-top: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.72rem;
+    color: #64748b;
+  }
+  .dose-slider-wrap input[type=range] { width: 100px; accent-color: #6366f1; }
+  .dose-slider-wrap .dose-label { color: #94a3b8; font-weight: 500; min-width: 50px; }
+
   /* Footer / credits */
   footer {
     padding: 24px 32px;
@@ -279,6 +310,41 @@
   .category-header:first-child { margin-top: 0; }
 
   .full-list-active { color: #6366f1 !important; border-color: #6366f1 !important; }
+
+  /* Sound toggle */
+  .sound-btn {
+    position: absolute;
+    top: 18px;
+    left: 24px;
+    font-size: 1.3rem;
+    background: #1e293b;
+    border: 1px solid #334155;
+    color: #94a3b8;
+    cursor: pointer;
+    padding: 6px 12px;
+    border-radius: 6px;
+    z-index: 2;
+    transition: all 0.2s;
+  }
+  .sound-btn:hover { background: #334155; color: #e2e8f0; }
+  .sound-btn.active { color: #6366f1; border-color: #6366f1; }
+
+  /* Hybrid flower in compare mode */
+  .compare-flowers .hybrid-side {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .compare-flowers .hybrid-side svg {
+    width: min(28vw, 220px);
+    height: min(28vw, 220px);
+  }
+  .hybrid-label {
+    font-size: 0.75rem;
+    color: #a78bfa;
+    margin-top: 4px;
+    font-style: italic;
+  }
 
   /* Compare mode */
   .compare-bar {
@@ -385,6 +451,25 @@
     height: min(38vw, 300px);
   }
 
+  .hybrid-flower {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: -20px auto 0;
+  }
+  .hybrid-flower svg {
+    width: min(28vw, 200px);
+    height: min(28vw, 200px);
+    filter: drop-shadow(0 0 12px rgba(139, 92, 246, 0.4));
+  }
+  .hybrid-label {
+    font-size: 0.7rem;
+    color: #a78bfa;
+    margin-top: 4px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
   .compare-side .compare-label {
     margin-top: 6px;
     font-size: 0.9rem;
@@ -457,12 +542,14 @@
 <header>
   <h1>Flowers</h1>
   <div class="controls">
+    <input type="text" id="searchBar" placeholder="Search drugs..." autocomplete="off">
     <select id="categoryFilter">
       <option value="All">All Categories</option>
     </select>
     <button id="playAllBtn">&#9654; Play All</button>
     <button id="restartAllBtn">&#8634; Restart</button>
     <button id="compareBtn">Compare Two</button>
+    <button id="randomPairBtn" title="Random pair">&#127922;</button>
     <button id="fullListBtn">Full List (241)</button>
   </div>
 </header>
@@ -493,6 +580,7 @@
 
 <div class="overlay" id="overlay">
   <canvas id="hallucinationCanvas"></canvas>
+  <button class="sound-btn" id="soloSoundBtn" title="Toggle sound">&#128264;</button>
   <button class="close-btn" id="closeOverlay">&times;</button>
   <div id="soloFlowerContainer"></div>
   <div class="solo-info">
@@ -500,6 +588,12 @@
     <div class="category-tag" id="soloCategory"></div>
     <div class="phase-indicator" id="phaseIndicator"></div>
     <div class="solo-details" id="soloDetails"></div>
+    <a id="pwLink" class="pw-link" href="#" target="_blank" rel="noopener">View on PsychonautWiki &rarr;</a>
+    <div class="dose-slider-wrap">
+      <b>Dose:</b>
+      <input type="range" id="doseSlider" min="1" max="3" step="0.1" value="2">
+      <span class="dose-label" id="doseLabel">Medium</span>
+    </div>
   </div>
   <div class="timeline-container">
     <input type="range" id="timeline" min="0" max="1000" value="0">
@@ -528,8 +622,10 @@
 
 <div class="compare-overlay" id="compareOverlay">
   <canvas id="compareCanvas"></canvas>
+  <button class="sound-btn" id="compareSoundBtn" title="Toggle sound">&#128264;</button>
   <button class="close-btn" id="closeCompare" style="position:absolute;top:18px;right:24px;font-size:2rem;background:none;border:none;color:#94a3b8;cursor:pointer;z-index:1;">&times;</button>
   <div class="compare-flowers" id="compareFlowers"></div>
+  <div class="hybrid-flower" id="hybridFlower"></div>
   <div class="compare-info">
     <h2 id="compareTitle"></h2>
     <div class="interaction-tag" id="interactionTag"></div>
@@ -923,6 +1019,10 @@ function init() {
   setupOverlay();
   setupHeaderButtons();
   setupCompareMode();
+  setupSearch();
+  setupDoseSlider();
+  handleHashRoute();
+  window.addEventListener('hashchange', handleHashRoute);
 }
 
 // ─── Category filter ───
@@ -967,6 +1067,8 @@ function setupHeaderButtons() {
       a.playing = true;
     });
   });
+
+  document.getElementById('randomPairBtn').addEventListener('click', openRandomPair);
 
   document.getElementById('fullListBtn').addEventListener('click', () => {
     showFullList = !showFullList;
@@ -1090,7 +1192,21 @@ function setupOverlay() {
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape') closeSolo();
     if (e.key === ' ' && soloState) { e.preventDefault(); toggleSoloPlay(); }
+    if (e.key === 'm' && soloState) { AudioEngine.toggleMute(); updateSoundBtn('soloSoundBtn'); }
   });
+
+  document.getElementById('soloSoundBtn').addEventListener('click', () => {
+    AudioEngine.toggleMute();
+    updateSoundBtn('soloSoundBtn');
+  });
+}
+
+function updateSoundBtn(id) {
+  const btn = document.getElementById(id);
+  if (!btn) return;
+  const muted = AudioEngine.isMuted();
+  btn.textContent = muted ? '\u{1F507}' : '\u{1F50A}';
+  btn.classList.toggle('active', !muted);
 }
 
 function openSolo(drug) {
@@ -1106,6 +1222,11 @@ function openSolo(drug) {
   initHallucinationOrbs(drug);
   document.getElementById('soloName').textContent = drug.name;
   document.getElementById('soloCategory').textContent = `${drug.category} \u2014 ${drug.subcategory}`;
+  document.getElementById('pwLink').href = getPWUrl(drug);
+  document.getElementById('doseSlider').value = 2;
+  document.getElementById('doseLabel').textContent = 'Medium';
+  currentDose = 2;
+  setHash(drug.id);
 
   // Effect details
   const e = drug.effects;
@@ -1132,8 +1253,10 @@ function openSolo(drug) {
   svg.appendChild(g);
   container.appendChild(svg);
 
-  soloState = { drug, g, startTime: performance.now(), playing: true, scrubbing: false, raf: null };
+  soloState = { drug, baseDrug: drug, g, startTime: performance.now(), playing: true, scrubbing: false, raf: null };
   document.getElementById('soloPlayPause').innerHTML = '&#9646;&#9646;';
+  AudioEngine.start(drug, 'solo');
+  updateSoundBtn('soloSoundBtn');
 
   const totalDur = getTotalDuration(drug);
   document.getElementById('totalLabel').textContent = formatTime(totalDur);
@@ -1141,14 +1264,19 @@ function openSolo(drug) {
 
   function tick(now) {
     if (!soloState) return;
+    // Apply dose scaling
+    soloState.drug = applyDose(soloState.baseDrug, getDoseMultiplier());
+    const activeDrug = soloState.drug;
+    const curTotalDur = getTotalDuration(activeDrug);
     if (soloState.playing && !soloState.scrubbing) {
       const elapsed = (now - soloState.startTime) / 1000;
-      const progress = Math.min(elapsed / totalDur, 1);
-      renderFlower(g, soloState.drug, progress, true, now);
+      const progress = Math.min(elapsed / curTotalDur, 1);
+      renderFlower(g, activeDrug, progress, true, now);
       document.getElementById('timeline').value = progress * 1000;
-      updatePhaseLabel(drug, progress);
-      updateTimeLabels(drug, progress);
-      updateSoloBackground(drug, progress, now);
+      updatePhaseLabel(activeDrug, progress);
+      updateTimeLabels(activeDrug, progress);
+      updateSoloBackground(activeDrug, progress, now);
+      AudioEngine.update(activeDrug, progress, 'solo');
 
       if (progress >= 1) {
         soloState.playing = false;
@@ -1164,13 +1292,14 @@ function closeSolo() {
   const overlay = document.getElementById('overlay');
   overlay.classList.remove('open');
   overlay.style.background = '';
-  // Clear canvas
   const canvas = document.getElementById('hallucinationCanvas');
-  const ctx = canvas.getContext('2d');
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  const cctx = canvas.getContext('2d');
+  cctx.clearRect(0, 0, canvas.width, canvas.height);
   hallucinationOrbs = [];
+  AudioEngine.stop('solo');
   if (soloState && soloState.raf) cancelAnimationFrame(soloState.raf);
   soloState = null;
+  setHash('');
 }
 
 function toggleSoloPlay() {
@@ -1397,9 +1526,15 @@ function openCompare() {
     container.appendChild(side);
   });
 
+  // Build hybrid flower
+  const hybridResult = renderHybridFlower(drug1, drug2, interaction);
+  const hybridDrug = hybridResult.hybrid;
+  const hybridG = hybridResult.g;
+
   const maxDur = Math.max(getTotalDuration(drug1), getTotalDuration(drug2));
   document.getElementById('compareTotalLabel').textContent = formatTime(maxDur);
   document.getElementById('compareTimeline').value = 0;
+  setHash(drug1.id + '+' + drug2.id);
 
   compareState = {
     drugs: [drug1, drug2],
@@ -1407,12 +1542,16 @@ function openCompare() {
     interaction,
     combined,
     maxDur,
+    hybridDrug,
+    hybridG,
     startTime: performance.now(),
     playing: true,
     scrubbing: false,
     raf: null,
   };
   document.getElementById('comparePlayPause').innerHTML = '&#9646;&#9646;';
+  AudioEngine.startDual(drug1, drug2);
+  updateSoundBtn('compareSoundBtn');
 
   function tick(now) {
     if (!compareState) return;
@@ -1422,6 +1561,11 @@ function openCompare() {
       renderCompareFrame(progress, now);
       document.getElementById('compareTimeline').value = progress * 1000;
       document.getElementById('compareTimeLabel').textContent = formatTime(progress * maxDur);
+      // Update audio for both drugs
+      const dur1t = getTotalDuration(drug1), dur2t = getTotalDuration(drug2);
+      const t = progress * maxDur;
+      AudioEngine.update(drug1, Math.min(t / dur1t, 1), 'comp0');
+      AudioEngine.update(drug2, Math.min(t / dur2t, 1), 'comp1');
 
       if (progress >= 1) {
         compareState.playing = false;
@@ -1447,6 +1591,12 @@ function renderCompareFrame(progress, now) {
   renderFlower(g1, d1, p1, true, now);
   renderFlower(g2, d2, p2, true, now);
 
+  // Hybrid flower
+  if (compareState.hybridDrug && compareState.hybridG) {
+    const hybridP = (p1 + p2) / 2;
+    renderFlower(compareState.hybridG, compareState.hybridDrug, hybridP, true, now);
+  }
+
   // Phase labels
   const phase1 = p1 < 1 ? getPhaseInfo(d1, p1) : { name: 'Finished', phaseProgress: 1 };
   const phase2 = p2 < 1 ? getPhaseInfo(d2, p2) : { name: 'Finished', phaseProgress: 1 };
@@ -1462,8 +1612,12 @@ function closeCompare() {
   const canvas = document.getElementById('compareCanvas');
   const ctx = canvas.getContext('2d');
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+  document.getElementById('hybridFlower').innerHTML = '';
   if (compareState && compareState.raf) cancelAnimationFrame(compareState.raf);
+  AudioEngine.stop('comp0');
+  AudioEngine.stop('comp1');
   compareState = null;
+  setHash('');
 }
 
 // ─── Compare hallucination canvas ───
@@ -1711,9 +1865,192 @@ function setupCompareMode() {
     compareState.scrubbing = false;
   });
 
+  document.getElementById('compareSoundBtn').addEventListener('click', () => {
+    AudioEngine.toggleMute();
+    updateSoundBtn('compareSoundBtn');
+  });
+
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape' && compareState) closeCompare();
+    if (e.key === 'm' && compareState) { AudioEngine.toggleMute(); updateSoundBtn('compareSoundBtn'); }
   });
+}
+
+// ─── Search ───
+function setupSearch() {
+  const input = document.getElementById('searchBar');
+  input.addEventListener('input', () => {
+    const q = input.value.trim().toLowerCase();
+    const cards = document.querySelectorAll('.card');
+    const headers = document.querySelectorAll('.category-header');
+    if (!q) {
+      cards.forEach(c => c.style.display = '');
+      headers.forEach(h => h.style.display = '');
+      return;
+    }
+    cards.forEach(c => {
+      const label = c.querySelector('.label');
+      const sub = c.querySelector('.sub-label');
+      const name = (label ? label.textContent : '').toLowerCase();
+      const subcat = (sub ? sub.textContent : '').toLowerCase();
+      c.style.display = (name.includes(q) || subcat.includes(q)) ? '' : 'none';
+    });
+    headers.forEach(h => h.style.display = 'none');
+  });
+}
+
+// ─── Random pair ───
+function openRandomPair() {
+  const all = getActiveDrugs();
+  if (all.length < 2) return;
+  const i = Math.floor(Math.random() * all.length);
+  let j;
+  do { j = Math.floor(Math.random() * all.length); } while (j === i);
+  comparePicks = [{ drug: all[i] }, { drug: all[j] }];
+  openCompare();
+}
+
+// ─── PsychonautWiki link helper ───
+function getPWUrl(drug) {
+  const name = drug.name.replace(/ /g, '_');
+  return `https://psychonautwiki.org/wiki/${encodeURIComponent(name)}`;
+}
+
+// ─── URL hash routing ───
+function handleHashRoute() {
+  const hash = window.location.hash.slice(1);
+  if (!hash) return;
+  const all = getActiveDrugs();
+  if (hash.includes('+')) {
+    const [id1, id2] = hash.split('+');
+    const d1 = all.find(d => d.id === id1);
+    const d2 = all.find(d => d.id === id2);
+    if (d1 && d2) {
+      comparePicks = [{ drug: d1 }, { drug: d2 }];
+      openCompare();
+    }
+  } else {
+    const drug = all.find(d => d.id === hash);
+    if (drug) openSolo(drug);
+  }
+}
+
+function setHash(val) {
+  history.replaceState(null, '', val ? '#' + val : window.location.pathname);
+}
+
+// ─── Dose slider ───
+let currentDose = 2; // 1=low, 2=medium, 3=high
+
+function setupDoseSlider() {
+  const slider = document.getElementById('doseSlider');
+  const label = document.getElementById('doseLabel');
+  slider.addEventListener('input', () => {
+    currentDose = parseFloat(slider.value);
+    if (currentDose <= 1.5) label.textContent = 'Low';
+    else if (currentDose <= 2.5) label.textContent = 'Medium';
+    else label.textContent = 'High';
+  });
+}
+
+function getDoseMultiplier() {
+  // Returns a multiplier: 0.5 (low) to 1.5 (high)
+  return 0.25 + (currentDose - 1) * 0.625;
+}
+
+function applyDose(baseDrug, mult) {
+  if (mult === 1) return baseDrug;
+  const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+  return {
+    ...baseDrug,
+    duration: {
+      onset: baseDrug.duration.onset * (1 + (mult - 1) * 0.3),
+      comeUp: baseDrug.duration.comeUp * (1 + (mult - 1) * 0.3),
+      peak: baseDrug.duration.peak * mult,
+      offset: baseDrug.duration.offset * (1 + (mult - 1) * 0.4),
+      afterEffects: baseDrug.duration.afterEffects * (1 + (mult - 1) * 0.5),
+    },
+    effects: {
+      cognitiveComplexity: clamp(Math.round(baseDrug.effects.cognitiveComplexity * mult), 1, 10),
+      euphoria: clamp(Math.round(baseDrug.effects.euphoria * mult), 0, 10),
+      intensity: clamp(Math.round(baseDrug.effects.intensity * mult), 1, 10),
+      bodyLoad: clamp(Math.round(baseDrug.effects.bodyLoad * mult), 0, 10),
+      egoDissolve: clamp(Math.round(baseDrug.effects.egoDissolve * mult), 0, 10),
+      visuals: clamp(Math.round(baseDrug.effects.visuals * mult), 0, 10),
+    },
+    flower: {
+      ...baseDrug.flower,
+      petalRadius: clamp(Math.round(baseDrug.flower.petalRadius * (0.7 + mult * 0.3)), 15, 55),
+      centerSize: clamp(Math.round(baseDrug.flower.centerSize * (0.8 + mult * 0.2)), 3, 20),
+    }
+  };
+}
+
+// ─── Hybrid flower ───
+function buildHybridDrug(drug1, drug2, interaction) {
+  const blend = (a, b, w) => a * (1 - w) + b * w;
+  const f1 = drug1.flower, f2 = drug2.flower;
+  const e1 = drug1.effects, e2 = drug2.effects;
+  const synergy = interaction.type === 'synergy' ? 1.2 : interaction.type === 'dampening' ? 0.7 : 1.0;
+
+  // Blend colors
+  const rgb1 = hexToRgb(f1.primaryColor), rgb2 = hexToRgb(f2.primaryColor);
+  const rgbS1 = hexToRgb(f1.secondaryColor), rgbS2 = hexToRgb(f2.secondaryColor);
+  const blendRgb = (a, b) => '#' + [0,1,2].map(i => Math.round((a[i]+b[i])/2).toString(16).padStart(2,'0')).join('');
+
+  return {
+    id: drug1.id + '_' + drug2.id + '_hybrid',
+    name: 'Hybrid',
+    category: drug1.category,
+    subcategory: 'Combined',
+    duration: {
+      onset: blend(drug1.duration.onset, drug2.duration.onset, 0.5),
+      comeUp: blend(drug1.duration.comeUp, drug2.duration.comeUp, 0.5),
+      peak: blend(drug1.duration.peak, drug2.duration.peak, 0.5) * synergy,
+      offset: blend(drug1.duration.offset, drug2.duration.offset, 0.5),
+      afterEffects: blend(drug1.duration.afterEffects, drug2.duration.afterEffects, 0.5),
+    },
+    effects: {
+      cognitiveComplexity: Math.min(10, Math.round(blend(e1.cognitiveComplexity, e2.cognitiveComplexity, 0.5) * synergy)),
+      euphoria: Math.min(10, Math.round(blend(e1.euphoria, e2.euphoria, 0.5) * synergy)),
+      intensity: Math.min(10, Math.round(blend(e1.intensity, e2.intensity, 0.5) * synergy)),
+      bodyLoad: Math.min(10, Math.round(blend(e1.bodyLoad, e2.bodyLoad, 0.5) * synergy)),
+      egoDissolve: Math.min(10, Math.round(blend(e1.egoDissolve, e2.egoDissolve, 0.5) * synergy)),
+      visuals: Math.min(10, Math.round(blend(e1.visuals, e2.visuals, 0.5) * synergy)),
+    },
+    flower: {
+      petalCount: Math.round(blend(f1.petalCount, f2.petalCount, 0.5)),
+      petalShape: f1.petalShape, // pick first drug's shape
+      primaryColor: blendRgb(rgb1, rgb2),
+      secondaryColor: blendRgb(rgbS1, rgbS2),
+      petalRadius: Math.round(blend(f1.petalRadius, f2.petalRadius, 0.5) * synergy),
+      centerSize: Math.round(blend(f1.centerSize, f2.centerSize, 0.5)),
+      stemHeight: Math.round(blend(f1.stemHeight, f2.stemHeight, 0.5)),
+    }
+  };
+}
+
+function renderHybridFlower(drug1, drug2, interaction) {
+  const container = document.getElementById('hybridFlower');
+  container.innerHTML = '';
+  const hybrid = buildHybridDrug(drug1, drug2, interaction);
+
+  const svgNS = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(svgNS, 'svg');
+  svg.setAttribute('viewBox', '-80 -70 160 160');
+  svg.setAttribute('xmlns', svgNS);
+  addDefs(svg, hybrid);
+  const g = document.createElementNS(svgNS, 'g');
+  svg.appendChild(g);
+
+  const label = document.createElement('div');
+  label.className = 'hybrid-label';
+  label.textContent = 'Hybrid';
+
+  container.appendChild(svg);
+  container.appendChild(label);
+
+  return { hybrid, g };
 }
 
 // ─── Duration / phase helpers ───
@@ -1812,6 +2149,278 @@ function petalPath(shape, r) {
       return petalPath('rounded', r);
   }
 }
+
+// ─── Generative Audio Engine ───
+const AudioEngine = (() => {
+  let ctx = null;
+  let masterGain = null;
+  let nodes = {};   // active audio nodes
+  let active = false;
+  let muted = true; // start muted
+
+  function getCtx() {
+    if (!ctx) {
+      ctx = new (window.AudioContext || window.webkitAudioContext)();
+      masterGain = ctx.createGain();
+      masterGain.gain.value = 0;
+      masterGain.connect(ctx.destination);
+    }
+    if (ctx.state === 'suspended') ctx.resume();
+    return ctx;
+  }
+
+  // Drug category → base frequency and character
+  function getDrugTuning(drug) {
+    const cat = drug.category;
+    const map = {
+      'Psychedelics':   { baseFreq: 220,  waveform: 'sine',     filterQ: 8,  detuneRange: 15, reverbMix: 0.6 },
+      'Stimulants':     { baseFreq: 330,  waveform: 'sawtooth', filterQ: 3,  detuneRange: 5,  reverbMix: 0.2 },
+      'Depressants':    { baseFreq: 110,  waveform: 'sine',     filterQ: 2,  detuneRange: 3,  reverbMix: 0.5 },
+      'Opioids':        { baseFreq: 130,  waveform: 'sine',     filterQ: 1,  detuneRange: 2,  reverbMix: 0.7 },
+      'Dissociatives':  { baseFreq: 185,  waveform: 'triangle', filterQ: 6,  detuneRange: 25, reverbMix: 0.8 },
+      'Entactogens':    { baseFreq: 262,  waveform: 'sine',     filterQ: 4,  detuneRange: 8,  reverbMix: 0.5 },
+      'Cannabinoids':   { baseFreq: 165,  waveform: 'sine',     filterQ: 2,  detuneRange: 4,  reverbMix: 0.4 },
+      'Deliriants':     { baseFreq: 98,   waveform: 'sawtooth', filterQ: 10, detuneRange: 40, reverbMix: 0.7 },
+      'Nootropics':     { baseFreq: 392,  waveform: 'sine',     filterQ: 1,  detuneRange: 2,  reverbMix: 0.1 },
+      'Hallucinogens':  { baseFreq: 196,  waveform: 'triangle', filterQ: 5,  detuneRange: 20, reverbMix: 0.6 },
+    };
+    return map[cat] || map['Depressants'];
+  }
+
+  // Build audio graph for a drug
+  function buildGraph(drug, prefix) {
+    const ac = getCtx();
+    const tuning = getDrugTuning(drug);
+    const n = {};
+
+    // Main drone oscillator
+    n.osc1 = ac.createOscillator();
+    n.osc1.type = tuning.waveform;
+    n.osc1.frequency.value = tuning.baseFreq;
+
+    // Harmony oscillator (fifth above)
+    n.osc2 = ac.createOscillator();
+    n.osc2.type = tuning.waveform;
+    n.osc2.frequency.value = tuning.baseFreq * 1.498; // slightly detuned fifth
+
+    // Sub bass
+    n.osc3 = ac.createOscillator();
+    n.osc3.type = 'sine';
+    n.osc3.frequency.value = tuning.baseFreq * 0.5;
+
+    // Shimmer oscillator (octave up, detuned)
+    n.osc4 = ac.createOscillator();
+    n.osc4.type = 'sine';
+    n.osc4.frequency.value = tuning.baseFreq * 2.01;
+
+    // LFO for tremolo / movement
+    n.lfo = ac.createOscillator();
+    n.lfo.type = 'sine';
+    n.lfo.frequency.value = 0.3;
+    n.lfoGain = ac.createGain();
+    n.lfoGain.gain.value = 0;
+    n.lfo.connect(n.lfoGain);
+
+    // Gains for each osc
+    n.gain1 = ac.createGain(); n.gain1.gain.value = 0;
+    n.gain2 = ac.createGain(); n.gain2.gain.value = 0;
+    n.gain3 = ac.createGain(); n.gain3.gain.value = 0;
+    n.gain4 = ac.createGain(); n.gain4.gain.value = 0;
+
+    // Filter
+    n.filter = ac.createBiquadFilter();
+    n.filter.type = 'lowpass';
+    n.filter.frequency.value = 200;
+    n.filter.Q.value = tuning.filterQ;
+
+    // Convolver-free reverb approximation: feedback delay
+    n.delay = ac.createDelay(1.0);
+    n.delay.delayTime.value = 0.3;
+    n.feedback = ac.createGain();
+    n.feedback.gain.value = tuning.reverbMix * 0.5;
+    n.delayGain = ac.createGain();
+    n.delayGain.gain.value = tuning.reverbMix;
+
+    // Master for this voice
+    n.voiceGain = ac.createGain();
+    n.voiceGain.gain.value = 0;
+
+    // Connect: oscs → gains → filter → voiceGain → masterGain
+    n.osc1.connect(n.gain1);
+    n.osc2.connect(n.gain2);
+    n.osc3.connect(n.gain3);
+    n.osc4.connect(n.gain4);
+
+    // LFO modulates osc1 gain for tremolo
+    n.lfoGain.connect(n.gain1.gain);
+
+    [n.gain1, n.gain2, n.gain3, n.gain4].forEach(g => g.connect(n.filter));
+
+    n.filter.connect(n.voiceGain);
+
+    // Delay feedback loop
+    n.filter.connect(n.delay);
+    n.delay.connect(n.feedback);
+    n.feedback.connect(n.delay);
+    n.delay.connect(n.delayGain);
+    n.delayGain.connect(n.voiceGain);
+
+    n.voiceGain.connect(masterGain);
+
+    // Start oscillators
+    n.osc1.start();
+    n.osc2.start();
+    n.osc3.start();
+    n.osc4.start();
+    n.lfo.start();
+
+    n.tuning = tuning;
+    n.drug = drug;
+
+    nodes[prefix] = n;
+    return n;
+  }
+
+  function start(drug, prefix = 'solo') {
+    getCtx();
+    if (nodes[prefix]) stop(prefix);
+    buildGraph(drug, prefix);
+    active = true;
+    if (!muted) masterGain.gain.setTargetAtTime(0.35, ctx.currentTime, 0.3);
+  }
+
+  function startDual(drug1, drug2) {
+    getCtx();
+    stop('comp0'); stop('comp1');
+    buildGraph(drug1, 'comp0');
+    buildGraph(drug2, 'comp1');
+    active = true;
+    if (!muted) masterGain.gain.setTargetAtTime(0.3, ctx.currentTime, 0.3);
+  }
+
+  function stop(prefix) {
+    const n = nodes[prefix];
+    if (!n) return;
+    try {
+      [n.osc1, n.osc2, n.osc3, n.osc4, n.lfo].forEach(o => { try { o.stop(); } catch(e){} });
+    } catch(e) {}
+    delete nodes[prefix];
+  }
+
+  function stopAll() {
+    Object.keys(nodes).forEach(stop);
+    active = false;
+    if (masterGain) masterGain.gain.setTargetAtTime(0, ctx.currentTime, 0.1);
+  }
+
+  function toggleMute() {
+    muted = !muted;
+    if (!ctx) return muted;
+    if (muted) {
+      masterGain.gain.setTargetAtTime(0, ctx.currentTime, 0.3);
+    } else {
+      masterGain.gain.setTargetAtTime(0.35, ctx.currentTime, 0.3);
+    }
+    return muted;
+  }
+
+  function isMuted() { return muted; }
+
+  // Update audio parameters based on trip progress
+  function update(drug, progress, prefix = 'solo') {
+    const n = nodes[prefix];
+    if (!n || !ctx) return;
+
+    const t = ctx.currentTime;
+    const tuning = n.tuning;
+    const d = drug.duration;
+    const total = getTotalDuration(drug);
+    const elapsed = progress * total;
+    const visuals = drug.effects.visuals / 10;
+    const intensity = drug.effects.intensity / 10;
+    const bodyLoad = drug.effects.bodyLoad / 10;
+    const ego = drug.effects.egoDissolve / 10;
+
+    let volume = 0;
+    let filterFreq = 200;
+    let harmonyVol = 0;
+    let subVol = 0;
+    let shimmerVol = 0;
+    let detuneAmt = 0;
+    let lfoSpeed = 0.3;
+    let lfoDepth = 0;
+    let delayFeedback = tuning.reverbMix * 0.3;
+
+    let acc = 0;
+
+    // Onset: low drone barely audible
+    if (elapsed <= d.onset) {
+      const p = d.onset > 0 ? elapsed / d.onset : 1;
+      volume = p * 0.15;
+      filterFreq = 150 + p * 100;
+      subVol = p * 0.1;
+    }
+    // Come up: growing, filter opening, harmonics appearing
+    else if (elapsed <= (acc = d.onset) + d.comeUp) {
+      const p = (elapsed - acc) / d.comeUp;
+      volume = 0.15 + p * 0.35;
+      filterFreq = 250 + p * 600;
+      harmonyVol = p * 0.15;
+      subVol = 0.1 + p * 0.1;
+      detuneAmt = p * tuning.detuneRange * 0.5;
+      lfoDepth = p * 3;
+    }
+    // Peak: full richness, all harmonics, shimmer, wide filter
+    else if (elapsed <= (acc = d.onset + d.comeUp) + d.peak) {
+      const p = (elapsed - acc) / d.peak;
+      volume = 0.5 + Math.sin(p * Math.PI) * 0.15 * intensity;
+      filterFreq = 800 + visuals * 1200 + Math.sin(p * Math.PI * 3) * 200;
+      harmonyVol = 0.15 + visuals * 0.12;
+      subVol = 0.2;
+      shimmerVol = visuals * 0.1 * (0.5 + Math.sin(p * Math.PI) * 0.5);
+      detuneAmt = tuning.detuneRange * (0.5 + ego * 0.5);
+      lfoSpeed = 0.5 + bodyLoad * 0.8;
+      lfoDepth = 5 + bodyLoad * 8;
+      delayFeedback = tuning.reverbMix * (0.4 + ego * 0.3);
+    }
+    // Offset: fading, filter closing
+    else if (elapsed <= (acc = d.onset + d.comeUp + d.peak) + d.offset) {
+      const p = (elapsed - acc) / d.offset;
+      volume = 0.5 * (1 - p * 0.5);
+      filterFreq = 800 * (1 - p * 0.6) + 150;
+      harmonyVol = 0.15 * (1 - p);
+      subVol = 0.2 * (1 - p * 0.5);
+      shimmerVol = 0;
+      detuneAmt = tuning.detuneRange * 0.3 * (1 - p);
+      lfoDepth = 3 * (1 - p);
+    }
+    // After effects: minimal, fading to silence
+    else {
+      acc = d.onset + d.comeUp + d.peak + d.offset;
+      const p = d.afterEffects > 0 ? Math.min((elapsed - acc) / d.afterEffects, 1) : 1;
+      volume = 0.25 * (1 - p);
+      filterFreq = 200 + 100 * (1 - p);
+      subVol = 0.1 * (1 - p);
+    }
+
+    // Apply parameters with smooth ramps
+    const ramp = 0.15;
+    n.voiceGain.gain.setTargetAtTime(volume, t, ramp);
+    n.filter.frequency.setTargetAtTime(Math.max(80, filterFreq), t, ramp);
+    n.gain1.gain.setTargetAtTime(0.2, t, ramp);
+    n.gain2.gain.setTargetAtTime(harmonyVol, t, ramp);
+    n.gain3.gain.setTargetAtTime(subVol, t, ramp);
+    n.gain4.gain.setTargetAtTime(shimmerVol, t, ramp);
+    n.osc1.detune.setTargetAtTime(detuneAmt, t, ramp);
+    n.osc2.detune.setTargetAtTime(-detuneAmt * 0.7, t, ramp);
+    n.osc4.detune.setTargetAtTime(detuneAmt * 1.5, t, ramp);
+    n.lfo.frequency.setTargetAtTime(lfoSpeed, t, ramp);
+    n.lfoGain.gain.setTargetAtTime(lfoDepth, t, ramp);
+    n.feedback.gain.setTargetAtTime(Math.min(0.85, delayFeedback), t, ramp);
+  }
+
+  return { start, startDual, stop, stopAll, toggleMute, isMuted, update };
+})();
 
 // ─── Easing ───
 function easeInOut(t) { return t < 0.5 ? 2*t*t : 1-Math.pow(-2*t+2,2)/2; }
