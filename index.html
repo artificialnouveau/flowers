@@ -123,9 +123,11 @@
     align-items: center;
     justify-content: center;
     backdrop-filter: blur(8px);
-    transition: background 0.4s ease;
+    opacity: 0;
+    transition: opacity 0.6s ease;
   }
   .overlay.open { display: flex; }
+  .overlay.visible { opacity: 1; }
 
   #hallucinationCanvas {
     position: absolute;
@@ -421,8 +423,11 @@
     justify-content: center;
     backdrop-filter: blur(8px);
     overflow: auto;
+    opacity: 0;
+    transition: opacity 0.6s ease;
   }
   .compare-overlay.open { display: flex; }
+  .compare-overlay.visible { opacity: 1; }
 
   #compareCanvas {
     position: absolute;
@@ -1317,6 +1322,7 @@ function openSolo(drug) {
 
   const overlay = document.getElementById('overlay');
   overlay.classList.add('open');
+  requestAnimationFrame(() => requestAnimationFrame(() => overlay.classList.add('visible')));
 
   // Init hallucination canvas
   const canvas = document.getElementById('hallucinationCanvas');
@@ -1398,7 +1404,9 @@ function openSolo(drug) {
 
 function closeSolo() {
   const overlay = document.getElementById('overlay');
-  overlay.classList.remove('open');
+  overlay.classList.remove('visible');
+  // Wait for fade-out, then hide
+  setTimeout(() => { overlay.classList.remove('open'); }, 600);
   overlay.style.background = '';
   const canvas = document.getElementById('hallucinationCanvas');
   const cctx = canvas.getContext('2d');
@@ -1589,6 +1597,7 @@ function openCompare() {
 
   const overlay = document.getElementById('compareOverlay');
   overlay.classList.add('open');
+  requestAnimationFrame(() => requestAnimationFrame(() => overlay.classList.add('visible')));
 
   // Canvas
   const canvas = document.getElementById('compareCanvas');
@@ -1722,7 +1731,9 @@ function renderCompareFrame(progress, now) {
 }
 
 function closeCompare() {
-  document.getElementById('compareOverlay').classList.remove('open');
+  const compOverlay = document.getElementById('compareOverlay');
+  compOverlay.classList.remove('visible');
+  setTimeout(() => { compOverlay.classList.remove('open'); }, 600);
   const canvas = document.getElementById('compareCanvas');
   const ctx = canvas.getContext('2d');
   ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -2589,10 +2600,12 @@ function getHallucinationIntensity(drug, progress) {
   let acc = 0;
 
   if (t <= d.onset) {
-    intensity = 0;
+    // Subtle fade-in during onset instead of nothing
+    const p = d.onset > 0 ? t / d.onset : 1;
+    intensity = easeInOut(p) * 0.08;
   } else if (t <= (acc = d.onset) + d.comeUp) {
     const p = (t - acc) / d.comeUp;
-    intensity = easeInOut(p) * 0.45;
+    intensity = 0.08 + easeInOut(p) * 0.37;
   } else if (t <= (acc = d.onset + d.comeUp) + d.peak) {
     const p = (t - acc) / d.peak;
     intensity = 0.45 + Math.sin(p * Math.PI) * 0.55;
@@ -2602,10 +2615,14 @@ function getHallucinationIntensity(drug, progress) {
   } else {
     acc = d.onset + d.comeUp + d.peak + d.offset;
     const p = d.afterEffects > 0 ? Math.min((t - acc) / d.afterEffects, 1) : 1;
-    intensity = (1 - p) * 0.08;
+    intensity = (1 - easeInOut(p)) * 0.08;
   }
 
-  return intensity * visuals;
+  // Smooth global fade-in over the first 8% of the animation
+  const fadeIn = Math.min(progress / 0.08, 1);
+  const smoothFade = fadeIn * fadeIn * (3 - 2 * fadeIn); // smoothstep
+
+  return intensity * visuals * smoothFade;
 }
 
 function updateSoloBackground(drug, progress, now) {
