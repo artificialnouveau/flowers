@@ -3724,13 +3724,27 @@ function renderFlower(g, drug, progress, isSolo, now) {
   const swayAmt = (drug.effects.bodyLoad * 0.2 + 1.2) * bloomScale;
   const sway = swayAmt * (Math.sin(time * 1.1) * 0.6 + windBase * 0.5);
 
-  // Ego dissolution → center dissolves during peak (boundary between self and world blurs)
+  // Ego dissolution — smoothly ramps based on phase progress, not a hard toggle
   const egoLevel = drug.effects.egoDissolve / 10;
-  // Smooth slow breathing expansion — high ego = center expands and diffuses
-  const egoBreath = 0.5 + 0.5 * Math.sin(time * 0.8); // slow, smooth
-  const egoExpand = glowOn ? (1 + egoLevel * 0.6 * egoBreath) : 1;
-  // How much the center "dissolves" — fades and blurs outward
-  const egoDissolveAmt = glowOn ? egoLevel : 0;
+  // Compute a smooth ego ramp: 0 during onset, ramps up through come-up, full at peak, ramps down
+  let egoRamp = 0;
+  {
+    let eAcc = 0;
+    if (t <= d.onset) {
+      egoRamp = 0;
+    } else if (t <= (eAcc = d.onset) + d.comeUp) {
+      egoRamp = easeInOut((t - eAcc) / d.comeUp) * 0.6;
+    } else if (t <= (eAcc = d.onset + d.comeUp) + d.peak) {
+      egoRamp = 0.6 + 0.4 * Math.sin(((t - eAcc) / d.peak) * Math.PI);
+    } else if (t <= (eAcc = d.onset + d.comeUp + d.peak) + d.offset) {
+      egoRamp = 0.6 * (1 - easeInOut((t - eAcc) / d.offset));
+    } else {
+      egoRamp = 0;
+    }
+  }
+  const egoAmt = egoLevel * egoRamp; // 0–1 smooth
+  const egoBreath = 0.5 + 0.5 * Math.sin(time * 0.8);
+  const egoExpand = 1 + egoAmt * 0.6 * egoBreath;
 
   // Clear and rebuild
   while (g.firstChild) g.removeChild(g.firstChild);
@@ -3837,46 +3851,49 @@ function renderFlower(g, drug, progress, isSolo, now) {
     }
   }
 
-  // Center disc — ego dissolution makes it expand, diffuse, and lose boundaries
+  // Center disc — ego dissolution: white light radiates outward, core fades
   if (centerR > 0.5) {
-    // Multiple soft dissolving rings for high ego dissolution (boundaries blurring)
-    if (egoDissolveAmt > 0.2) {
-      const rings = 3 + Math.floor(egoDissolveAmt * 4);
-      for (let r = rings; r >= 1; r--) {
-        const ringT = r / rings;
-        const ringR = centerR * egoExpand * (1 + ringT * egoDissolveAmt * 2.5);
-        const ringBreath = 1 + Math.sin(time * 0.6 + r * 0.7) * 0.08 * egoDissolveAmt;
-        const ringAlpha = egoDissolveAmt * 0.15 * (1 - ringT * 0.7) * colorOpacity * ringBreath;
+    // Dissolving light rings — always 5, fade in/out with egoAmt (no popping)
+    if (egoAmt > 0.05) {
+      for (let r = 5; r >= 1; r--) {
+        const ringT = r / 5;
+        const ringR = centerR * egoExpand * (1 + ringT * egoAmt * 3);
+        const ringBreath = 1 + Math.sin(time * 0.6 + r * 0.9) * 0.06;
+        // White/light rings for contrast against colored petals
+        const ringAlpha = egoAmt * 0.2 * (1 - ringT * 0.7) * colorOpacity * ringBreath;
         const ring = document.createElementNS(svgNS, 'circle');
         ring.setAttribute('cx', 0);
         ring.setAttribute('cy', 0);
         ring.setAttribute('r', ringR * ringBreath);
-        ring.setAttribute('fill', f.secondaryColor);
+        ring.setAttribute('fill', 'white');
         ring.setAttribute('opacity', ringAlpha);
         headG.appendChild(ring);
       }
     }
 
-    // Outer disc — becomes more transparent and larger with ego dissolution
-    const outerAlpha = colorOpacity * (0.85 - egoDissolveAmt * 0.4);
+    // Outer disc — becomes lighter and more transparent as ego dissolves
+    const outerAlpha = colorOpacity * (0.85 - egoAmt * 0.5);
     const outer = document.createElementNS(svgNS, 'circle');
     outer.setAttribute('cx', 0);
     outer.setAttribute('cy', 0);
     outer.setAttribute('r', centerR * egoExpand);
-    outer.setAttribute('fill', f.secondaryColor);
+    // Blend toward white as ego dissolves
+    outer.setAttribute('fill', egoAmt > 0.3 ? `rgba(255,255,255,${egoAmt * 0.4})` : f.secondaryColor);
     outer.setAttribute('opacity', outerAlpha);
     headG.appendChild(outer);
 
-    // Inner disc — shrinks and fades with ego dissolution (the "self" dissolving)
-    const innerScale = 1 - egoDissolveAmt * 0.5; // shrinks as ego dissolves
-    const innerAlpha = colorOpacity * (1 - egoDissolveAmt * 0.6);
-    const inner = document.createElementNS(svgNS, 'circle');
-    inner.setAttribute('cx', 0);
-    inner.setAttribute('cy', 0);
-    inner.setAttribute('r', centerR * 0.45 * egoExpand * innerScale);
-    inner.setAttribute('fill', f.primaryColor);
-    inner.setAttribute('opacity', innerAlpha);
-    headG.appendChild(inner);
+    // Inner disc — the "self": shrinks and fades into white light
+    const innerScale = 1 - egoAmt * 0.6;
+    const innerAlpha = colorOpacity * (1 - egoAmt * 0.7);
+    if (innerAlpha > 0.01) {
+      const inner = document.createElementNS(svgNS, 'circle');
+      inner.setAttribute('cx', 0);
+      inner.setAttribute('cy', 0);
+      inner.setAttribute('r', Math.max(0.5, centerR * 0.45 * egoExpand * innerScale));
+      inner.setAttribute('fill', egoAmt > 0.5 ? 'white' : f.primaryColor);
+      inner.setAttribute('opacity', innerAlpha);
+      headG.appendChild(inner);
+    }
   }
 
   // Seed dot when not yet bloomed
