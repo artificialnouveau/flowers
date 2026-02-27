@@ -5,7 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Flowers</title>
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  html { overflow-x: hidden; width: 100%; }
 
   body {
     font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
@@ -415,6 +416,7 @@
     align-items: center;
     justify-content: center;
     backdrop-filter: blur(8px);
+    overflow: auto;
   }
   .compare-overlay.open { display: flex; }
 
@@ -535,6 +537,90 @@
     font-size: 1.1rem;
     padding: 8px 18px;
   }
+
+  /* ─── Mobile responsive ─── */
+  @media (max-width: 640px) {
+    html, body { overflow-x: hidden; width: 100%; }
+
+    header {
+      padding: 12px 12px;
+      gap: 8px;
+    }
+    header h1 { font-size: 1.1rem; }
+
+    .controls {
+      gap: 6px;
+      width: 100%;
+      justify-content: flex-start;
+    }
+    .controls > * {
+      font-size: 0.72rem;
+      padding: 6px 8px;
+    }
+    #searchBar { width: 100%; order: -1; }
+
+    .grid {
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 10px;
+      padding: 12px;
+    }
+    /* Compact card on mobile */
+    .card { padding: 8px; border-radius: 10px; }
+    .card svg { width: 120px; height: 130px; }
+    .card .label { font-size: 0.75rem; }
+    .card .sub-label { font-size: 0.6rem; }
+
+    /* List view on mobile */
+    .grid.list-view {
+      grid-template-columns: 1fr;
+      gap: 4px;
+    }
+    .grid.list-view .card {
+      flex-direction: row;
+      gap: 10px;
+      padding: 6px 10px;
+    }
+    .grid.list-view .card svg { width: 48px; height: 52px; flex-shrink: 0; }
+    .grid.list-view .card .label { font-size: 0.8rem; margin-top: 0; }
+    .grid.list-view .card .sub-label { font-size: 0.65rem; margin-top: 0; }
+    .grid.list-view .category-header {
+      font-size: 0.8rem;
+      padding: 8px 10px 4px;
+    }
+
+    .intro { padding: 12px 14px 6px; }
+    .intro p { font-size: 0.8rem; }
+    .legend { font-size: 0.65rem; gap: 4px 10px; }
+
+    .compare-bar { padding: 8px 12px; font-size: 0.75rem; gap: 8px; }
+
+    /* Solo overlay mobile */
+    .overlay svg.solo-flower { width: 60vw; height: 60vw; }
+    .solo-info h2 { font-size: 1.2rem; }
+    .timeline-container { width: 85vw; }
+    .solo-details { font-size: 0.65rem; max-width: 90vw; }
+    .dose-slider-wrap { font-size: 0.65rem; }
+    .sound-btn { top: 10px; left: 10px; font-size: 1rem; padding: 4px 8px; }
+    .overlay .close-btn { top: 10px; right: 12px; font-size: 1.5rem; }
+
+    /* Compare overlay mobile */
+    .compare-overlay { padding: 10px; }
+    .compare-flowers svg { width: 35vw; height: 35vw; }
+    .compare-flowers { gap: 12px; }
+    .hybrid-flower svg { width: 25vw; height: 25vw; }
+    .compare-info h2 { font-size: 1rem; }
+    .compare-timeline { width: 85vw; }
+    .compare-side .compare-label { font-size: 0.75rem; }
+    .compare-side .compare-phase { font-size: 0.65rem; }
+
+    footer { padding: 16px 12px; font-size: 0.7rem; }
+  }
+
+  /* Toggle between grid and list view on mobile */
+  #viewToggle { display: none; }
+  @media (max-width: 640px) {
+    #viewToggle { display: inline-block; }
+  }
 </style>
 </head>
 <body>
@@ -550,6 +636,7 @@
     <button id="compareBtn">Compare Two</button>
     <button id="randomPairBtn" title="Random pair">&#127922;</button>
     <button id="restartAllBtn">&#8634; Restart</button>
+    <button id="viewToggle" title="Toggle list/grid view">&#9776; List</button>
   </div>
 </header>
 
@@ -1022,6 +1109,18 @@ function init() {
   setupDoseSlider();
   handleHashRoute();
   window.addEventListener('hashchange', handleHashRoute);
+
+  // Resize canvases on orientation change / resize
+  window.addEventListener('resize', () => {
+    if (soloState) {
+      const c = document.getElementById('hallucinationCanvas');
+      c.width = window.innerWidth; c.height = window.innerHeight;
+    }
+    if (compareState) {
+      const c = document.getElementById('compareCanvas');
+      c.width = window.innerWidth; c.height = window.innerHeight;
+    }
+  });
 }
 
 // ─── Category filter ───
@@ -1070,6 +1169,13 @@ function setupHeaderButtons() {
     btn.classList.toggle('full-list-active', showFullList);
     rebuildCategoryOptions();
     renderGrid(document.getElementById('categoryFilter').value);
+  });
+
+  document.getElementById('viewToggle').addEventListener('click', () => {
+    const grid = document.getElementById('grid');
+    const btn = document.getElementById('viewToggle');
+    const isList = grid.classList.toggle('list-view');
+    btn.innerHTML = isList ? '&#9638; Grid' : '&#9776; List';
   });
 }
 
@@ -1248,7 +1354,7 @@ function openSolo(drug) {
 
   soloState = { drug, baseDrug: drug, g, startTime: performance.now(), playing: true, scrubbing: false, raf: null };
   document.getElementById('soloPlayPause').innerHTML = '&#9646;&#9646;';
-  AudioEngine.start(drug, 'solo');
+  try { AudioEngine.start(drug, 'solo'); } catch(e) { console.warn('Audio init failed:', e); }
   updateSoundBtn('soloSoundBtn');
 
   const totalDur = getTotalDuration(drug);
@@ -1269,7 +1375,7 @@ function openSolo(drug) {
       updatePhaseLabel(activeDrug, progress);
       updateTimeLabels(activeDrug, progress);
       updateSoloBackground(activeDrug, progress, now);
-      AudioEngine.update(activeDrug, progress, 'solo');
+      try { AudioEngine.update(activeDrug, progress, 'solo'); } catch(e) {}
 
       if (progress >= 1) {
         soloState.playing = false;
@@ -1289,7 +1395,7 @@ function closeSolo() {
   const cctx = canvas.getContext('2d');
   cctx.clearRect(0, 0, canvas.width, canvas.height);
   hallucinationOrbs = [];
-  AudioEngine.stop('solo');
+  try { AudioEngine.stop('solo'); } catch(e) {}
   if (soloState && soloState.raf) cancelAnimationFrame(soloState.raf);
   soloState = null;
   setHash('');
@@ -1543,7 +1649,7 @@ function openCompare() {
     raf: null,
   };
   document.getElementById('comparePlayPause').innerHTML = '&#9646;&#9646;';
-  AudioEngine.startDual(drug1, drug2);
+  try { AudioEngine.startDual(drug1, drug2); } catch(e) { console.warn('Audio init failed:', e); }
   updateSoundBtn('compareSoundBtn');
 
   function tick(now) {
@@ -1557,8 +1663,8 @@ function openCompare() {
       // Update audio for both drugs
       const dur1t = getTotalDuration(drug1), dur2t = getTotalDuration(drug2);
       const t = progress * maxDur;
-      AudioEngine.update(drug1, Math.min(t / dur1t, 1), 'comp0');
-      AudioEngine.update(drug2, Math.min(t / dur2t, 1), 'comp1');
+      try { AudioEngine.update(drug1, Math.min(t / dur1t, 1), 'comp0'); } catch(e) {}
+      try { AudioEngine.update(drug2, Math.min(t / dur2t, 1), 'comp1'); } catch(e) {}
 
       if (progress >= 1) {
         compareState.playing = false;
@@ -1607,8 +1713,7 @@ function closeCompare() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   document.getElementById('hybridFlower').innerHTML = '';
   if (compareState && compareState.raf) cancelAnimationFrame(compareState.raf);
-  AudioEngine.stop('comp0');
-  AudioEngine.stop('comp1');
+  try { AudioEngine.stop('comp0'); AudioEngine.stop('comp1'); } catch(e) {}
   compareState = null;
   setHash('');
 }
@@ -1984,7 +2089,7 @@ function buildHybridDrug(drug1, drug2, interaction) {
   const blend = (a, b, w) => a * (1 - w) + b * w;
   const f1 = drug1.flower, f2 = drug2.flower;
   const e1 = drug1.effects, e2 = drug2.effects;
-  const synergy = interaction.type === 'synergy' ? 1.2 : interaction.type === 'dampening' ? 0.7 : 1.0;
+  const synergy = interaction.type === 'synergy' ? 1.2 : interaction.type === 'antagonism' ? 0.7 : 1.0;
 
   // Blend colors
   const rgb1 = hexToRgb(f1.primaryColor), rgb2 = hexToRgb(f2.primaryColor);
