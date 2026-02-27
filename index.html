@@ -666,7 +666,7 @@
   <p>Each flower represents a drug's experience profile. The animation plays through onset, come-up, peak, offset, and after-effects in real-time compression (1 hour = 1 second). Click any flower to watch its full timeline.</p>
   <div class="legend">
     <span><b>Petals</b> = cognitive complexity (how many distinct thought patterns, altered perceptions, and mental effects. More petals = richer, more layered headspace)</span>
-    <span><b>Shape</b> = drug class (rounded: depressants/entactogens, pointed: stimulants, wavy: psychedelics, wispy: dissociatives/deliriants, serrated leaf: cannabinoids)</span>
+    <span><b>Shape</b> = drug class (rounded: depressants/entactogens, pointed: stimulants, wavy: psychedelics, wispy: dissociatives, trumpet: deliriants, serrated leaf: cannabinoids)</span>
     <span><b>Color</b> = drug class (warm reds/yellows: stimulants, cool blues: depressants, purples/greens: psychedelics, grays: dissociatives, dark: deliriants)</span>
     <span><b>Size</b> = intensity</span>
     <span><b>Sway</b> = body load</span>
@@ -860,13 +860,13 @@ const drugs = [
     id: "dph", name: "DPH (Diphenhydramine)", category: "Deliriants", subcategory: "Deliriants",
     duration: { onset: 0.75, comeUp: 1.5, peak: 3, offset: 2, afterEffects: 6 },
     effects: { cognitiveComplexity: 6, euphoria: 1, intensity: 7, bodyLoad: 8, egoDissolve: 5, visuals: 7 },
-    flower: { petalCount: 7, petalShape: "wispy", primaryColor: "#44403c", secondaryColor: "#78716c", petalRadius: 30, centerSize: 10, stemHeight: 90 }
+    flower: { petalCount: 5, petalShape: "datura", primaryColor: "#44403c", secondaryColor: "#78716c", petalRadius: 32, centerSize: 10, stemHeight: 90 }
   },
   {
     id: "datura", name: "Datura", category: "Deliriants", subcategory: "Deliriants",
     duration: { onset: 1, comeUp: 2, peak: 8, offset: 6, afterEffects: 24 },
     effects: { cognitiveComplexity: 8, euphoria: 0, intensity: 10, bodyLoad: 10, egoDissolve: 9, visuals: 9 },
-    flower: { petalCount: 9, petalShape: "wispy", primaryColor: "#1c1917", secondaryColor: "#57534e", petalRadius: 42, centerSize: 16, stemHeight: 95 }
+    flower: { petalCount: 5, petalShape: "datura", primaryColor: "#1c1917", secondaryColor: "#57534e", petalRadius: 44, centerSize: 14, stemHeight: 95 }
   }
 ];
 
@@ -884,9 +884,9 @@ const extraDrugs = [
   {"id": "sts_135", "name": "STS-135", "category": "Cannabinoids", "subcategory": "Indolecarboxamide", "duration": {"onset": 27.5, "comeUp": 0.458, "peak": 0.333, "offset": 0.125, "afterEffects": 7.104}, "effects": {"cognitiveComplexity": 3, "euphoria": 5, "intensity": 5, "bodyLoad": 3, "egoDissolve": 1, "visuals": 2}, "flower": {"petalCount": 7, "petalShape": "cannabis", "primaryColor": "#86efac", "secondaryColor": "#4ade80", "petalRadius": 31, "centerSize": 5, "stemHeight": 92}},
   {"id": "thj_018", "name": "THJ-018", "category": "Cannabinoids", "subcategory": "Naphthoylindazole", "duration": {"onset": 0.125, "comeUp": 0, "peak": 1.25, "offset": 0.125, "afterEffects": 1.0}, "effects": {"cognitiveComplexity": 3, "euphoria": 5, "intensity": 6, "bodyLoad": 4, "egoDissolve": 1, "visuals": 4}, "flower": {"petalCount": 7, "petalShape": "cannabis", "primaryColor": "#22c55e", "secondaryColor": "#16a34a", "petalRadius": 39, "centerSize": 5, "stemHeight": 36}},
   {"id": "thj_2201", "name": "THJ-2201", "category": "Cannabinoids", "subcategory": "Naphthoylindazole", "duration": {"onset": 0.125, "comeUp": 0, "peak": 0.625, "offset": 0, "afterEffects": 0.75}, "effects": {"cognitiveComplexity": 3, "euphoria": 6, "intensity": 7, "bodyLoad": 4, "egoDissolve": 2, "visuals": 3}, "flower": {"petalCount": 7, "petalShape": "cannabis", "primaryColor": "#22c55e", "secondaryColor": "#16a34a", "petalRadius": 40, "centerSize": 6, "stemHeight": 31}},
-  {"id": "benzydamine", "name": "Benzydamine", "category": "Deliriants", "subcategory": "Indazole", "duration": {"onset": 0.667, "comeUp": 0, "peak": 4.5, "offset": 5.5, "afterEffects": 2.667}, "effects": {"cognitiveComplexity": 6, "euphoria": 2, "intensity": 10, "bodyLoad": 8, "egoDissolve": 6, "visuals": 7}, "flower": {"petalCount": 6, "petalShape": "wispy", "primaryColor": "#44403c", "secondaryColor": "#1c1917", "petalRadius": 42, "centerSize": 12, "stemHeight": 85}},
-  {"id": "mirtazapine", "name": "Mirtazapine", "category": "Deliriants", "subcategory": "Piperazinoazepine", "duration": {"onset": 0.375, "comeUp": 0, "peak": 2.25, "offset": 4.0, "afterEffects": 12.375}, "effects": {"cognitiveComplexity": 6, "euphoria": 2, "intensity": 8, "bodyLoad": 9, "egoDissolve": 5, "visuals": 8}, "flower": {"petalCount": 7, "petalShape": "wispy", "primaryColor": "#1c1917", "secondaryColor": "#78716c", "petalRadius": 42, "centerSize": 11, "stemHeight": 92}},
-  {"id": "promethazine", "name": "Promethazine", "category": "Deliriants", "subcategory": "Phenothiazine", "duration": {"onset": 0.75, "comeUp": 0.667, "peak": 1.5, "offset": 4.0, "afterEffects": 1.729}, "effects": {"cognitiveComplexity": 6, "euphoria": 2, "intensity": 6, "bodyLoad": 8, "egoDissolve": 6, "visuals": 7}, "flower": {"petalCount": 7, "petalShape": "wispy", "primaryColor": "#1c1917", "secondaryColor": "#78716c", "petalRadius": 34, "centerSize": 12, "stemHeight": 63}},
+  {"id": "benzydamine", "name": "Benzydamine", "category": "Deliriants", "subcategory": "Indazole", "duration": {"onset": 0.667, "comeUp": 0, "peak": 4.5, "offset": 5.5, "afterEffects": 2.667}, "effects": {"cognitiveComplexity": 6, "euphoria": 2, "intensity": 10, "bodyLoad": 8, "egoDissolve": 6, "visuals": 7}, "flower": {"petalCount": 5, "petalShape": "datura", "primaryColor": "#44403c", "secondaryColor": "#1c1917", "petalRadius": 42, "centerSize": 12, "stemHeight": 85}},
+  {"id": "mirtazapine", "name": "Mirtazapine", "category": "Deliriants", "subcategory": "Piperazinoazepine", "duration": {"onset": 0.375, "comeUp": 0, "peak": 2.25, "offset": 4.0, "afterEffects": 12.375}, "effects": {"cognitiveComplexity": 6, "euphoria": 2, "intensity": 8, "bodyLoad": 9, "egoDissolve": 5, "visuals": 8}, "flower": {"petalCount": 5, "petalShape": "datura", "primaryColor": "#1c1917", "secondaryColor": "#78716c", "petalRadius": 42, "centerSize": 11, "stemHeight": 92}},
+  {"id": "promethazine", "name": "Promethazine", "category": "Deliriants", "subcategory": "Phenothiazine", "duration": {"onset": 0.75, "comeUp": 0.667, "peak": 1.5, "offset": 4.0, "afterEffects": 1.729}, "effects": {"cognitiveComplexity": 6, "euphoria": 2, "intensity": 6, "bodyLoad": 8, "egoDissolve": 6, "visuals": 7}, "flower": {"petalCount": 5, "petalShape": "datura", "primaryColor": "#1c1917", "secondaryColor": "#78716c", "petalRadius": 34, "centerSize": 12, "stemHeight": 63}},
   {"id": "14_butanediol", "name": "1,4-Butanediol", "category": "Depressants", "subcategory": "Alkanediol", "duration": {"onset": 0.667, "comeUp": 0, "peak": 1.5, "offset": 1.75, "afterEffects": 0.083}, "effects": {"cognitiveComplexity": 3, "euphoria": 4, "intensity": 8, "bodyLoad": 3, "egoDissolve": 1, "visuals": 1}, "flower": {"petalCount": 4, "petalShape": "rounded", "primaryColor": "#2563eb", "secondaryColor": "#60a5fa", "petalRadius": 42, "centerSize": 5, "stemHeight": 43}},
   {"id": "2m2b", "name": "2M2B", "category": "Depressants", "subcategory": "Alcohol", "duration": {"onset": 0, "comeUp": 0, "peak": 7.0, "offset": 5.0, "afterEffects": 3.0}, "effects": {"cognitiveComplexity": 3, "euphoria": 5, "intensity": 10, "bodyLoad": 3, "egoDissolve": 1, "visuals": 0}, "flower": {"petalCount": 4, "petalShape": "rounded", "primaryColor": "#3b82f6", "secondaryColor": "#6366f1", "petalRadius": 42, "centerSize": 5, "stemHeight": 92}},
   {"id": "alcohol", "name": "Alcohol", "category": "Depressants", "subcategory": "Alcohol", "duration": {"onset": 0.058, "comeUp": 0.5, "peak": 1.0, "offset": 1.375, "afterEffects": 0.317}, "effects": {"cognitiveComplexity": 3, "euphoria": 4, "intensity": 7, "bodyLoad": 3, "egoDissolve": 1, "visuals": 0}, "flower": {"petalCount": 4, "petalShape": "rounded", "primaryColor": "#6366f1", "secondaryColor": "#818cf8", "petalRadius": 41, "centerSize": 5, "stemHeight": 39}},
@@ -2294,6 +2294,20 @@ function petalPath(shape, r) {
     case 'wispy':
       // Ethereal, hollow, cloud-like — wide in middle, pinched at base and tip
       return `M0,0 C${r*0.5},-${r*0.15} ${r*0.55},-${r*0.4} ${r*0.35},-${r*0.55} C${r*0.2},-${r*0.65} ${r*0.15},-${r*0.82} 0,-${r} C-${r*0.15},-${r*0.82} -${r*0.2},-${r*0.65} -${r*0.35},-${r*0.55} C-${r*0.55},-${r*0.4} -${r*0.5},-${r*0.15} 0,0Z`;
+    case 'datura': {
+      // Datura trumpet petal — wide flaring funnel shape with sharp pointed tip
+      // Narrow at base, flares dramatically wide, then tapers to a sharp point
+      const fw = r * 0.45; // flare width at widest
+      return `M0,0 ` +
+        `C${r*0.08},-${r*0.05} ${r*0.12},-${r*0.15} ${r*0.15},-${r*0.25} ` + // narrow base
+        `C${r*0.2},-${r*0.35} ${r*0.35},-${r*0.45} ${fw},-${r*0.55} ` + // flare outward
+        `C${fw*0.95},-${r*0.65} ${fw*0.75},-${r*0.78} ${r*0.2},-${r*0.88} ` + // curve toward tip
+        `C${r*0.1},-${r*0.95} ${r*0.03},-${r*0.99} 0,-${r} ` + // sharp point
+        `C-${r*0.03},-${r*0.99} -${r*0.1},-${r*0.95} -${r*0.2},-${r*0.88} ` +
+        `C-${fw*0.75},-${r*0.78} -${fw*0.95},-${r*0.65} -${fw},-${r*0.55} ` +
+        `C-${r*0.35},-${r*0.45} -${r*0.2},-${r*0.35} -${r*0.15},-${r*0.25} ` +
+        `C-${r*0.12},-${r*0.15} -${r*0.08},-${r*0.05} 0,0Z`;
+    }
     case 'cannabis': {
       // Cannabis fan leaf — serrated edges, narrow pointed leaflet
       const w = r * 0.18; // leaflet half-width
