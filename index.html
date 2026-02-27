@@ -628,7 +628,7 @@
     <select id="categoryFilter">
       <option value="All">All Categories</option>
     </select>
-    <button id="fullListBtn">Full List (241)</button>
+    <button id="fullListBtn" class="full-list-active">Curated (20)</button>
     <button id="compareBtn">Compare Two</button>
     <button id="randomPairBtn" title="Random pair">&#127922;</button>
     <button id="restartAllBtn">&#8634; Restart</button>
@@ -1079,7 +1079,7 @@ const extraDrugs = [
 // ─── Globals ───
 let gridAnimations = {};
 let soloState = null;
-let showFullList = false;
+let showFullList = true;
 
 function getActiveDrugs() {
   if (showFullList) {
