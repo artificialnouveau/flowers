@@ -1360,18 +1360,11 @@ function setupOverlay() {
   });
 
   document.getElementById('soloSoundBtn').addEventListener('click', () => {
-    const dbg = AudioEngine.debugRestart(soloState ? soloState.drug : null, 'solo');
-    updateSoundBtn('soloSoundBtn');
-    // Show debug overlay on mobile to diagnose audio issues
-    let el = document.getElementById('audioDebug');
-    if (!el) {
-      el = document.createElement('div');
-      el.id = 'audioDebug';
-      el.style.cssText = 'position:fixed;bottom:10px;left:10px;right:10px;background:#000c;color:#0f0;font:11px/1.4 monospace;padding:8px;border-radius:6px;z-index:99999;max-height:30vh;overflow:auto;pointer-events:none;';
-      document.body.appendChild(el);
+    AudioEngine.toggleMute();
+    if (!AudioEngine.isMuted() && soloState) {
+      try { AudioEngine.restart(soloState.drug, 'solo'); } catch(e) {}
     }
-    el.textContent = dbg;
-    setTimeout(() => { if (el.parentNode) el.remove(); }, 8000);
+    updateSoundBtn('soloSoundBtn');
   });
 }
 
@@ -3001,85 +2994,7 @@ const AudioEngine = (() => {
     n.tinnitusOsc.frequency.setTargetAtTime(8200 + ego * 2000, t, ramp); // higher pitch with more ego dissolution
   }
 
-  // Debug: toggleMute + restart with state logging — starts oscillators AFTER resume
-  function debugRestart(drug, prefix) {
-    const log = [];
-    try {
-      log.push('1. muted=' + muted);
-      toggleMute();
-      log.push('2. after toggle: muted=' + muted);
-
-      if (!muted && drug) {
-        log.push('3. ctx before=' + (ctx ? ctx.state : 'null'));
-
-        // Nuke old context
-        if (ctx) {
-          try { Object.keys(nodes).forEach(k => stop(k)); } catch(e) {}
-          try { ctx.close(); } catch(e) {}
-          ctx = null; masterGain = null; breatheGain = null; nodes = {};
-        }
-
-        // Unlock iOS silent switch
-        log.push('4. unlocking iOS audio...');
-        unlockiOSAudio();
-        log.push('4b. audioSession=' + (navigator.audioSession ? navigator.audioSession.type : 'N/A'));
-
-        // Create fresh context
-        log.push('5. creating AudioContext...');
-        ctx = new (window.AudioContext || window.webkitAudioContext)();
-        log.push('5b. ctx.state=' + ctx.state);
-
-        // Master gain chain (no oscillators yet!)
-        breatheGain = ctx.createGain();
-        breatheGain.gain.value = 1;
-        breatheGain.connect(ctx.destination);
-        masterGain = ctx.createGain();
-        masterGain.gain.value = 0.8;
-        masterGain.connect(breatheGain);
-
-        // Resume — WAIT for it to resolve before starting oscillators
-        const p = ctx.resume();
-        log.push('6. resume() called, state=' + ctx.state);
-
-        p.then(() => {
-          log.push('7. resume RESOLVED, state=' + ctx.state);
-
-          // NOW start test tone (context is running)
-          const testOsc = ctx.createOscillator();
-          testOsc.type = 'sine';
-          testOsc.frequency.value = 440;
-          const testGain = ctx.createGain();
-          testGain.gain.value = 0.5;
-          testOsc.connect(testGain);
-          testGain.connect(masterGain);
-          testOsc.start();
-          testOsc.stop(ctx.currentTime + 2);
-          log.push('8. test tone started, ctx.state=' + ctx.state);
-
-          // Build full graph
-          try {
-            buildGraph(drug, prefix);
-            active = true;
-            log.push('9. buildGraph ok');
-          } catch(e) {
-            log.push('9. buildGraph FAILED: ' + e.message);
-          }
-
-          const el = document.getElementById('audioDebug');
-          if (el) el.textContent = log.join('\n');
-        }).catch(e => {
-          log.push('7. resume REJECTED: ' + e.message);
-          const el = document.getElementById('audioDebug');
-          if (el) el.textContent = log.join('\n');
-        });
-      }
-    } catch(e) {
-      log.push('ERROR: ' + e.message + '\n' + e.stack);
-    }
-    return log.join('\n');
-  }
-
-  return { start, startDual, restart, restartDual, stop, stopAll, toggleMute, isMuted, update, debugRestart };
+  return { start, startDual, restart, restartDual, stop, stopAll, toggleMute, isMuted, update };
 })();
 
 // ─── Easing ───
